@@ -1,6 +1,6 @@
-# Obfuscated-RAG: Zero-Knowledge Document Q&A
+# Obfuscated-RAG
 
-A Streamlit app that lets you ask questions over a sensitive text document using a cloud LLM (Gemini) **without ever sending the raw sensitive data to the cloud**. It combines two privacy techniques — PII redaction and differential-privacy noise on embeddings — and includes a self-auditing "red team" agent that tests whether the pipeline actually leaks anything.
+A Streamlit app that lets you ask questions over a sensitive text document using a cloud LLM (Groq) **without ever sending the raw sensitive data to the llm**. It combines two privacy techniques, PII redaction and differential-privacy noise on embeddings and includes a self-auditing "red team" agent that tests whether the pipeline actually leaks anything.
 
 ## The problem this solves
 
@@ -23,10 +23,10 @@ User asks a question → question also gets PII-redacted → similarity search o
       ↓
 Retrieved (already-redacted) chunks + question sent to Gemini
       ↓
-Gemini answers using only tokens, never real values
+Groq answers using only tokens, never real values
       ↓
 If role = Admin → tokens are swapped back to real values locally
-If role = Guest → tokens stay redacted
+If role = Guest → tokens stay redacte(?i)(?:password|secret)\s*(?:[:=]|\s+is\s+)\s*([^\s\n.,]d
 ```
 
 ## Step-by-step breakdown
@@ -44,8 +44,7 @@ If role = Guest → tokens stay redacted
 ### 3. Embedding + differential privacy noise (`PrivacyAwareEmbeddings`, `gan_logic.py`)
 - Chunks are embedded using `all-MiniLM-L6-v2` (a local HuggingFace sentence-embedding model — text → vector of numbers representing meaning).
 - Before storing, `optimize_privacy_budget()` adds **Laplace noise** to every embedding vector (`DifferentialPrivacyAgent`). This is standard differential privacy: noise scaled by `sensitivity / epsilon`, so smaller epsilon = more noise = harder to reverse-engineer the original vector.
-- To decide *how much* noise is enough, a `FastDiscriminator` (logistic regression) tries to tell clean vectors apart from noisy ones. If it can still tell them apart easily (accuracy > 0.55), the loop adds more noise (`epsilon *= 1.5`, up to 5 tries) and re-checks. Once the noisy vectors are indistinguishable enough, that noise level is locked in.
-- Note: despite the naming ("GAN loop," "Adversarial Blurrer vs Detective"), this isn't a true GAN — there's no gradient-based adversarial training, just a noise-calibration search that borrows the adversarial *idea*.
+- To decide *how much* noise is enough, a `FastDiscriminator` (logistic regression) tries to tell clean vectors apart from noisy ones. If it can still tell them apart easily (accuracy > 0.55), the loop adds more noise (`epsilon /= 1.5`, up to 5 tries) and re-checks. Once the noisy vectors are indistinguishable enough, that noise level is locked in.
 
 ### 4. Vector storage
 - Noisy embeddings + redacted chunk text are stored in a local **Chroma** vector database — this only ever contains tokens, never raw PII.
@@ -53,8 +52,8 @@ If role = Guest → tokens stay redacted
 ### 5. Query time
 - User's question is also run through `blur_prompt()`, which swaps any recognizable real values (matched against the stored mapping) into their tokens, so the query itself doesn't reintroduce raw PII into what gets sent to the LLM.
 - `similarity_search` retrieves the top-k most relevant (already-redacted) chunks from Chroma.
-- A **canary token** (`CANARY_TOKEN`) is silently appended to the context sent to Gemini. If this exact fake secret ever comes back in the LLM's response, the app knows something in the prompt/response pipeline leaked unexpectedly, and blocks the message.
-- The prompt explicitly instructs Gemini: don't try to compute on redacted values, just echo the token back if relevant.
+- A **canary token** (`CANARY_TOKEN`) is silently appended to the context sent to Groq. If this exact fake secret ever comes back in the LLM's response, the app knows something in the prompt/response pipeline leaked unexpectedly, and blocks the message.
+- The prompt explicitly instructs Groq: don't try to compute on redacted values, just echo the token back if relevant.
 
 ### 6. Response handling
 - **Admin role**: `reassemble_text()` swaps tokens in the LLM's response back to their real values *locally*, using the session's `secure_mapping`. The real data never touched Gemini — only the final display, on your machine, does the unredacting.
@@ -62,8 +61,8 @@ If role = Guest → tokens stay redacted
 - Either way, if the canary token leaks through, the message is blocked and flagged instead of shown.
 
 ### 7. Agent 2 — adversarial audit (red-teaming your own pipeline)
-- On demand, this generates a fake "honey token" secret, redacts it the same way real data would be, and asks Gemini to repeat it back.
-- Compares Gemini's answer to the real fake secret using `difflib.SequenceMatcher` (string similarity).
+- On demand, this generates a fake "honey token" secret, redacts it the same way real data would be, and asks Groq to repeat it back.
+- Compares Groq's answer to the real fake secret using `difflib.SequenceMatcher` (string similarity).
 - If the secret leaks (exact match or similarity > 0.6), the app locks itself down (`system_locked = True`) — a hard stop simulating "we caught a real leak, halt everything."
 
 ### 8. Privacy visualization (PCA plot)
@@ -76,9 +75,6 @@ If role = Guest → tokens stay redacted
 | `app.py` | Streamlit UI, PII redaction (Presidio), RAG pipeline, LLM calls, audit UI, PCA visualization |
 | `noise.py` | Differential-privacy noise injection + noise-level calibration loop |
 
-## Known limitations (worth knowing, not necessarily fixing before demoing)
-
-- The "GAN" is a noise-calibration search, not true adversarial training.
-- `sensitivity=1.0` in the DP noise is a fixed placeholder, not derived from the actual embedding data.
-- Custom regex recognizers (password/salary) are brittle to rewording.
-- Adding noise to embeddings necessarily degrades retrieval quality — there's a privacy/utility tradeoff that isn't tuned or measured beyond the discriminator's accuracy check.
+##Summary
+The document is first analyzed by Presidio for any PII. This is redacted. Then we chunk it. We add laplacian noise to this. When the user asks a questions we run
+Presidio through that and then add laplacian noise. similarity search will return the closest vectors. This is what the llm sees. Based on the user if he is admin or not we show.
