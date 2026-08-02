@@ -75,6 +75,6 @@ If role = Guest → tokens stay redacte(?i)(?:password|secret)\s*(?:[:=]|\s+is\s
 | `app.py` | Streamlit UI, PII redaction (Presidio), RAG pipeline, LLM calls, audit UI, PCA visualization |
 | `noise.py` | Differential-privacy noise injection + noise-level calibration loop |
 
-##Summary
+## Summary
 The document is first analyzed by Presidio for any PII. This is redacted. Then we chunk it. We add laplacian noise to this. When the user asks a questions we run
 Presidio through that and then add laplacian noise. similarity search will return the closest vectors. This is what the llm sees. Based on the user if he is admin or not we show.
