@@ -49,6 +49,6 @@ def optimize_privacy_budget(clean_vectors: np.ndarray, target_accuracy: float = 
         if accuracy <= target_accuracy:
             return current_epsilon, noisy_vectors
         else:
-            current_epsilon *= 1.5 
+            current_epsilon /= 1.5 
             
     return current_epsilon, noisy_vectors
