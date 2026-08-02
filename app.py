@@ -35,7 +35,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-    llm = ChatGroq(model="llama3-70b-8192", temperature=0.1)
+    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)
 except Exception as e:
     st.error("⚠️ Could not initialize Groq API. Make sure your .env file is set up correctly.")
     llm = None
