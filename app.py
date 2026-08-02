@@ -11,14 +11,14 @@ import re
 import random
 import difflib
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from sklearn.decomposition import PCA
 import pandas as pd
 import altair as alt
 
 from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
 
-from gan_logic import optimize_privacy_budget
+from noise import optimize_privacy_budget
 
 load_dotenv()
 
@@ -35,9 +35,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.1)
+    llm = ChatGroq(model="llama3-70b-8192", temperature=0.1)
 except Exception as e:
-    st.error("⚠️ Could not initialize Gemini API. Make sure your .env file is set up correctly.")
+    st.error("⚠️ Could not initialize Groq API. Make sure your .env file is set up correctly.")
     llm = None
 
 if "vector_store" not in st.session_state:
