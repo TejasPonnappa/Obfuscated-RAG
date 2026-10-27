@@ -12,8 +12,7 @@ from sklearn.decomposition import PCA
 import pandas as pd
 import altair as alt
 
-from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
-
+from analyzer import build_analyzer
 from noise import optimize_privacy_budget
 from redaction import Redactor
 from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
@@ -69,17 +68,7 @@ if st.session_state.system_locked:
 
 @st.cache_resource
 def get_presidio_analyzer():
-    engine = AnalyzerEngine()
-    
-    pass_pattern = Pattern(name="password_pattern", regex=r"(?i)(?:password|secret)\s*(?:[:=]|\s+is\s+)\s*([^\s\n.,]+)", score=0.9)
-    pass_recognizer = PatternRecognizer(supported_entity="PASSWORD", patterns=[pass_pattern])
-    engine.registry.add_recognizer(pass_recognizer)
-    
-    salary_pattern = Pattern(name="salary_pattern", regex=r"\$[\d,]+(?:\.\d{2})?", score=0.9)
-    salary_recognizer = PatternRecognizer(supported_entity="SALARY", patterns=[salary_pattern])
-    engine.registry.add_recognizer(salary_recognizer)
-    
-    return engine
+    return build_analyzer()
 
 def PresidioTranslator():
     """A redactor bound to this session's token table and salt (logic lives in redaction.py)."""
