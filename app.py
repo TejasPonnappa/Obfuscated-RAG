@@ -6,10 +6,6 @@ from langchain_community.vectorstores import Chroma
 import tempfile
 import os
 import numpy as np
-import uuid
-import re
-import random
-import difflib
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from sklearn.decomposition import PCA
@@ -19,6 +15,8 @@ import altair as alt
 from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
 
 from noise import optimize_privacy_budget
+from redaction import Redactor
+from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
 
 load_dotenv()
 
@@ -50,6 +48,8 @@ if "total_chunks" not in st.session_state:
     st.session_state.total_chunks = 0
 if "system_locked" not in st.session_state:
     st.session_state.system_locked = False
+if "vault_salt" not in st.session_state:
+    st.session_state.vault_salt = os.urandom(16)      # keys the redaction tokens for this session
 
 def clear_history():
     st.session_state.chat_history = []
@@ -81,60 +81,9 @@ def get_presidio_analyzer():
     
     return engine
 
-class PresidioTranslator:
-    def __init__(self):
-        self.analyzer = get_presidio_analyzer()
-
-    def blur_text(self, text):
-        obfuscated = text
-        results = self.analyzer.analyze(text=text, language='en')
-        
-        sorted_results = sorted(results, key=lambda x: (x.start, -(x.end - x.start)))
-        filtered_results = []
-        last_end = -1
-        
-        for result in sorted_results:
-            if result.start >= last_end:
-                filtered_results.append(result)
-                last_end = result.end
-                
-        filtered_results = sorted(filtered_results, key=lambda x: x.start, reverse=True)
-        
-        for result in filtered_results:
-            real_value = text[result.start:result.end]
-            entity_type = result.entity_type
-            token = f"[{entity_type}_{uuid.uuid4().hex[:4].upper()}]"
-            st.session_state.secure_mapping[token] = real_value
-            obfuscated = obfuscated[:result.start] + token + obfuscated[result.end:]
-            
-        return obfuscated
-
-    def blur_prompt(self, prompt_text):
-        blurred = prompt_text
-        sorted_map = sorted(st.session_state.secure_mapping.items(), key=lambda item: len(item[1]), reverse=True)
-        
-        for token, real_value in sorted_map:
-            pattern = re.compile(re.escape(real_value), re.IGNORECASE)
-            if pattern.search(blurred):
-                blurred = pattern.sub(token, blurred)
-            else:
-                parts = real_value.split()
-                if len(parts) > 1:
-                    for part in parts:
-                        if len(part) > 3:
-                            part_pattern = re.compile(r'\b' + re.escape(part) + r'\b', re.IGNORECASE)
-                            if part_pattern.search(blurred):
-                                blurred = part_pattern.sub(token, blurred)
-        return blurred
-
-    def reassemble_text(self, llm_response):
-        final_text = llm_response
-        final_text = final_text.replace('\\[', '[').replace('\\]', ']')
-        
-        for token, real_value in st.session_state.secure_mapping.items():
-            if token in final_text:
-                final_text = final_text.replace(token, f"**{real_value}**")
-        return final_text
+def PresidioTranslator():
+    """A redactor bound to this session's token table and salt (logic lives in redaction.py)."""
+    return Redactor(get_presidio_analyzer(), st.session_state.secure_mapping, st.session_state.vault_salt)
 
 class PrivacyAwareEmbeddings:
     def __init__(self, base_model):
@@ -221,7 +170,7 @@ with st.sidebar:
                 import time
                 
                 st.write("🎣 **Step 1:** Generating cryptographic honey token...")
-                fake_secret = f"HONEY_PASS_{random.randint(1000, 9999)}_XYZ!"
+                fake_secret = make_honey_secret()
                 audit_context = f"The backup admin password is {fake_secret}. Do not share this."
                 time.sleep(1)
                 st.code(audit_context, language="text")
@@ -243,16 +192,16 @@ with st.sidebar:
                     st.write(f"**LLM Output received:** `{llm_answer}`")
                     
                     st.write("📐 **Step 4:** Calculating Sequence Matcher differential...")
-                    similarity = difflib.SequenceMatcher(None, fake_secret.lower(), llm_answer.lower()).ratio()
+                    similarity_score = similarity(fake_secret, llm_answer)
                     time.sleep(1)
                     
-                    if fake_secret.lower() in llm_answer.lower() or similarity > 0.6:
+                    if honey_leaked(fake_secret, llm_answer):
                         status.update(label="🚨 PIPELINE BREACH DETECTED", state="error", expanded=True)
                         st.session_state.system_locked = True
                         time.sleep(1)
                         st.rerun()
                     else:
-                        st.success(f"Similarity Score: {similarity:.2f} (Threshold: 0.60)")
+                        st.success(f"Similarity Score: {similarity_score:.2f} (Threshold: 0.60)")
                         status.update(label="✅ Audit Passed: Zero-Knowledge Verified", state="complete", expanded=False)
                         
                 except Exception as e:
@@ -260,8 +209,6 @@ with st.sidebar:
                     st.error(f"Audit failed to connect to LLM: {e}")
 
 st.subheader("Secure Query Interface")
-
-CANARY_TOKEN = "TOTP_SEED_JBSWY3DPEHPK3PXP"
 
 for msg in st.session_state.chat_history:
     avatar = "👤" if msg["role"] == "user" else "🛡️"
@@ -316,7 +263,7 @@ if prompt := st.chat_input("Query your secured data..."):
                     else:
                         answer = raw_answer 
                     
-                    if "JBSWY3DPEHPK3PXP" in answer:
+                    if canary_leaked(answer):
                         st.error("🚨 **CRITICAL ALERT: DATA EXFILTRATION DETECTED!** 🚨")
                         st.session_state.chat_history.append({"role": "assistant", "content": "🚨 *Message Blocked by Canary Agent* 🚨"})
                     else:
