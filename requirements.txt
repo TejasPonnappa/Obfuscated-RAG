@@ -1,0 +1,14 @@
+# After installing, download the spaCy model Presidio uses:  python -m spacy download en_core_web_lg
+streamlit>=1.40
+langchain-community>=0.3
+langchain-text-splitters>=0.3
+langchain-groq
+chromadb
+sentence-transformers>=3
+presidio-analyzer>=2.2
+spacy>=3.7
+scikit-learn>=1.4
+numpy>=1.26
+pandas>=2.1
+altair>=5
+python-dotenv
