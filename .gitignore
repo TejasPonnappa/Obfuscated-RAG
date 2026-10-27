@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 chroma_db/
 .chroma/
+eval/results/
