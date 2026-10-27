@@ -3,7 +3,12 @@ import random
 
 from faker import Faker
 
+AREA_CODES = [212, 312, 415, 617, 202, 305, 206, 512, 303, 404]     # real US area codes (Faker invents unassigned ones)
 DEPARTMENTS = ["Finance", "Engineering", "Legal", "Marketing", "Logistics", "Research", "Security", "Support"]
+
+
+def _phone(rng):
+    return f"({rng.choice(AREA_CODES)}) {rng.randint(201, 989)}-{rng.randint(1000, 9999)}"
 
 
 def make_people(n, seed=0):
@@ -18,7 +23,7 @@ def make_people(n, seed=0):
             continue
         used.add(name)
         people.append(dict(
-            name=name, email=fake.email(), phone=fake.phone_number(), dept=rng.choice(DEPARTMENTS),
+            name=name, email=fake.email(), phone=_phone(rng), dept=rng.choice(DEPARTMENTS),
             salary=f"${rng.randint(45, 210) * 1000:,}", password=f"{fake.word()}{rng.randint(100, 999)}!"))
     return people
 

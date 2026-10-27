@@ -1,7 +1,8 @@
 """The Presidio analyzer used by the app and the evaluation scripts (built once, outside Streamlit)."""
 from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer
 
-PASSWORD_REGEX = r"(?i)(?:password|secret)\s*(?:[:=]|\s+is\s+)\s*([^\s\n.,]+)"
+# "password is X", "password: X" and also "password for <someone> is X" (up to 40 characters between the word and the verb)
+PASSWORD_REGEX = r"(?i)\b(?:password|passcode|secret)\b[^.\n:=]{0,40}?(?:[:=]|\bis\b)\s*([^\s\n.,]+)"
 SALARY_REGEX = r"\$[\d,]+(?:\.\d{2})?"
 
 
