@@ -13,7 +13,8 @@ import pandas as pd
 import altair as alt
 
 from analyzer import build_analyzer
-from noise import optimize_privacy_budget
+from noise import (DEFAULT_EPSILON, EPSILON_CHOICES, MIN_USABLE_EPSILON, DifferentialPrivacyAgent,
+                   noise_to_signal_ratio, retention_estimate)
 from redaction import Redactor
 from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
 
@@ -80,15 +81,19 @@ class PrivacyAwareEmbeddings:
 
     def embed_documents(self, texts):
         raw_vecs = np.array(self.base_model.embed_documents(texts))
-        st.toast("🥊 Adversarial loop started: Blurrer vs Detective...", icon="⚙️")
-        final_eps, noisy_vecs = optimize_privacy_budget(raw_vecs)
-        
+        noisy_vecs = self._agent().inject_laplace_noise(raw_vecs)
+
         st.session_state.raw_vecs = raw_vecs
         st.session_state.noisy_vecs = noisy_vecs
         return noisy_vecs.tolist()
 
     def embed_query(self, text):
-        return self.base_model.embed_query(text)
+        # the question gets the same noise as the stored chunks, as the README describes
+        return self._agent().inject_laplace_noise(np.array(self.base_model.embed_query(text))).tolist()
+
+    @staticmethod
+    def _agent():
+        return DifferentialPrivacyAgent(epsilon=st.session_state.get("epsilon", DEFAULT_EPSILON))
 
 @st.cache_resource
 def get_embeddings():
@@ -103,8 +108,16 @@ st.caption("Adversarial Privacy & Data Exfiltration Prevention System")
 with st.sidebar:
     st.header("🎛️ Command Center")
     col1, col2 = st.columns(2)
-    col1.metric(label="GAN Defense", value="Active", delta="Protected")
+    col1.metric(label="Embedding noise", value="On", delta="Laplace")
     col2.metric(label="Presidio NLP", value="Unleashed", delta="50+ Entities")
+
+    st.select_slider("Embedding noise ε (smaller = more noise)", options=EPSILON_CHOICES, value=100, key="epsilon")
+    eps = st.session_state.epsilon
+    st.caption(f"Noise is ~{noise_to_signal_ratio(eps):.1f}x the embedding's size; roughly "
+               f"{retention_estimate(eps):.0%} of the no-noise retrieval quality (synthetic test). "
+               "Light obfuscation of the local vector store, not a formal privacy guarantee. Re-run Encrypt & Embed after changing it.")
+    if eps < MIN_USABLE_EPSILON:
+        st.warning("At this ε retrieval degrades sharply; answers will often miss the right chunk.")
 
     st.subheader("🔑 Access Control")
     user_role = st.selectbox(

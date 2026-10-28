@@ -1,6 +1,7 @@
 import numpy as np
 
-from noise import DifferentialPrivacyAgent, FastDiscriminator, optimize_privacy_budget
+from noise import (DEFAULT_EPSILON, DifferentialPrivacyAgent, MIN_USABLE_EPSILON, noise_to_signal_ratio,
+                   retention_estimate)
 
 
 def test_laplace_scale_is_sensitivity_over_epsilon():
@@ -17,12 +18,17 @@ def test_smaller_epsilon_means_more_noise():
     assert small > large
 
 
-def test_discriminator_declines_to_judge_a_tiny_sample():
-    clean = np.random.default_rng(0).normal(size=(3, 8))
-    assert FastDiscriminator().evaluate_noise(clean, clean + 1.0) == 0.5
+def test_noise_to_signal_ratio_matches_simulation():
+    np.random.seed(0)
+    unit = np.zeros((300, 384))
+    measured = np.linalg.norm(DifferentialPrivacyAgent(epsilon=DEFAULT_EPSILON).inject_laplace_noise(unit), axis=1).mean()
+    assert abs(measured - noise_to_signal_ratio(DEFAULT_EPSILON)) < 0.03
 
 
-def test_optimizer_returns_vectors_of_the_same_shape():
-    clean = np.random.default_rng(1).normal(size=(40, 16)) * 0.05
-    epsilon, noisy = optimize_privacy_budget(clean)
-    assert noisy.shape == clean.shape and epsilon > 0
+def test_default_epsilon_keeps_noise_below_a_third_of_the_signal_and_above_usable_floor():
+    assert noise_to_signal_ratio(DEFAULT_EPSILON) < 0.33
+    assert DEFAULT_EPSILON >= MIN_USABLE_EPSILON
+
+
+def test_retention_falls_as_epsilon_falls():
+    assert retention_estimate(2) < retention_estimate(20) < retention_estimate(50) < retention_estimate(100) <= 1.0
