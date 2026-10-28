@@ -13,12 +13,12 @@ import math
 import numpy as np
 
 EMBEDDING_DIM = 384
-DEFAULT_EPSILON = 100.0         # noise is ~0.28x the vector's length; keeps ~95% of the no-noise retrieval quality
+DEFAULT_EPSILON = 100.0         # noise is ~0.28x the vector's length; keeps ~96% of the no-noise retrieval quality
 MIN_USABLE_EPSILON = 50.0       # below this, retrieval degrades quickly
 
-# Measured on a synthetic HR corpus (120 chunks, 4 corpora): recall@5 of the right chunk with noise on both the stored
+# Measured on a synthetic HR corpus (120 chunks, 4 corpora; re-measured after the name-token fix): recall@5 of the right chunk with noise on both the stored
 # vectors and the question, as a share of recall@5 with no noise. Source: eval/privacy_utility.py.
-RETENTION_BY_EPSILON = {2: 0.15, 10: 0.20, 20: 0.35, 50: 0.75, 100: 0.95, 200: 1.0, 500: 1.0}
+RETENTION_BY_EPSILON = {2: 0.08, 10: 0.12, 20: 0.30, 50: 0.81, 100: 0.96, 200: 1.0, 500: 1.0}
 EPSILON_CHOICES = sorted(RETENTION_BY_EPSILON)
 
 
