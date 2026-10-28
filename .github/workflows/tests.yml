@@ -13,6 +13,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # the unit tests cover the pure modules (redaction, audit, noise), so only numpy, scikit-learn and pytest are needed
-      - run: pip install numpy scikit-learn pytest
+      # the unit tests cover the pure modules (redaction, audit, noise, regexes, corpus), so no Presidio or torch is installed; evals run locally
+      - run: pip install numpy scikit-learn pytest faker
       - run: python -m pytest -q
