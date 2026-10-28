@@ -1,5 +1,4 @@
 """The Presidio analyzer used by the app and the evaluation scripts (built once, outside Streamlit)."""
-from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer
 
 # "password is X", "password: X" and also "password for <someone> is X" (up to 40 characters between the word and the verb)
 PASSWORD_REGEX = r"(?i)\b(?:password|passcode|secret)\b[^.\n:=]{0,40}?(?:[:=]|\bis\b)\s*([^\s\n.,]+)"
@@ -11,7 +10,9 @@ NAME_AFTER_LABEL_REGEXES = [rf"(?<={label}[ ]){_NAME}" for label in ("Review of"
 
 
 def build_analyzer():
-    """Presidio's default analyzer plus two custom recognizers: passwords and dollar amounts."""
+    """Presidio's default analyzer plus custom recognizers: passwords, dollar amounts and names that follow a label."""
+    from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer      # imported here so the regexes above need no NLP stack
+
     engine = AnalyzerEngine()
     engine.registry.add_recognizer(PatternRecognizer(
         supported_entity="PASSWORD", patterns=[Pattern(name="password_pattern", regex=PASSWORD_REGEX, score=0.9)]))
