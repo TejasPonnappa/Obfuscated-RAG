@@ -32,3 +32,16 @@ def test_captured_value_is_the_secret_not_the_sentence():
 @pytest.mark.parametrize("text", CASES_NO_MATCH[:2])
 def test_does_not_fire_on_ordinary_sentences(text):
     assert not re.search(PASSWORD_REGEX, text)
+
+
+@pytest.mark.parametrize("text, value", [
+    ('the database secret is "blue.fox.77" (rotate it too)', '"blue.fox.77"'),      # dots inside the value
+    ("the password he used was tanaka_2019_summer. His account was locked.", "tanaka_2019_summer"),
+    ("pw: Clinic#Spring24", "Clinic#Spring24"),
+])
+def test_value_keeps_inner_dots_and_drops_the_sentence_end(text, value):
+    assert re.search(PASSWORD_REGEX, text).group(1) == value
+
+
+def test_does_not_treat_ordinary_words_as_credentials():
+    assert not re.search(PASSWORD_REGEX, "All people, numbers and credentials below are invented for testing.")
