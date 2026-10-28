@@ -2,6 +2,7 @@
 An optional extra detector: GLiNER, a small zero-shot entity model that runs locally (the weights are downloaded once;
 afterwards it needs no network, e.g. set HF_HUB_OFFLINE=1). It is added to Presidio's findings, not a replacement for them.
 """
+import os
 import time
 from types import SimpleNamespace
 
@@ -38,13 +39,34 @@ def windows(text, size=WINDOW_CHARS):
         start = end
 
 
+def _load(GLiNER, model_name):
+    """Load from the local cache with HuggingFace's offline mode on (the tokenizer would otherwise make a metadata lookup);
+    only if that fails (first use) allow the one-time download."""
+    import huggingface_hub.constants as hub
+    was_offline, env_before = hub.HF_HUB_OFFLINE, os.environ.get("HF_HUB_OFFLINE")
+    hub.HF_HUB_OFFLINE = True
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    try:
+        return GLiNER.from_pretrained(model_name, local_files_only=True), True
+    except Exception:
+        pass
+    finally:
+        hub.HF_HUB_OFFLINE = was_offline
+        if env_before is None:
+            os.environ.pop("HF_HUB_OFFLINE", None)
+        else:
+            os.environ["HF_HUB_OFFLINE"] = env_before
+    return GLiNER.from_pretrained(model_name), False
+
+
 class GlinerAnalyzer:
     """Same analyze() interface as Presidio's engine: its results plus GLiNER's."""
 
     def __init__(self, base, model_name=DEFAULT_MODEL, threshold=THRESHOLD):
         from gliner import GLiNER                    # imported here so the app and CI work without it
+        os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
         self.base = base
-        self.model = GLiNER.from_pretrained(model_name)
+        self.model, self.loaded_offline = _load(GLiNER, model_name)
         self.threshold = threshold
         self.seconds = 0.0
 

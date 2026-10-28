@@ -1,3 +1,5 @@
+import os
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")      # no usage ping when models are downloaded
 import streamlit as st
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
