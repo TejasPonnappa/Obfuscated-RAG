@@ -1,10 +1,11 @@
 import streamlit as st
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 import tempfile
 import os
+import time
 import numpy as np
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
@@ -13,7 +14,7 @@ import pandas as pd
 import altair as alt
 
 from analyzer import build_analyzer
-from config import groq_model
+from config import groq_model, is_idle
 from noise import (DEFAULT_EPSILON, EPSILON_CHOICES, MIN_USABLE_EPSILON, DifferentialPrivacyAgent,
                    noise_to_signal_ratio, retention_estimate)
 from redaction import Redactor
@@ -54,6 +55,20 @@ if "vault_salt" not in st.session_state:
 
 def clear_history():
     st.session_state.chat_history = []
+
+def wipe_session():
+    """Drop everything that can map tokens back to real values (the table lives only in this process's memory)."""
+    st.session_state.secure_mapping.clear()
+    st.session_state.vector_store = None
+    st.session_state.total_chunks = 0
+    st.session_state.chat_history = []
+    for key in ("raw_vecs", "noisy_vecs", "pipeline_doc", "pipeline_query"):
+        st.session_state.pop(key, None)
+
+if st.session_state.secure_mapping and is_idle(st.session_state.get("last_active"), time.time()):
+    wipe_session()
+    st.toast("Session was idle for 30 minutes: token table and vector store wiped.", icon="🧹")
+st.session_state.last_active = time.time()
 
 if st.session_state.system_locked:
     st.markdown("""
@@ -145,6 +160,7 @@ with st.sidebar:
             documents = loader.load()
             
             translator = PresidioTranslator()
+            original_sample = documents[0].page_content[:500] if documents else ""
             for doc in documents:
                 doc.page_content = translator.blur_text(doc.page_content)
                 
@@ -159,7 +175,17 @@ with st.sidebar:
             )
             
             os.remove(tmp_file_path)
+            raw, noisy = st.session_state.get("raw_vecs"), st.session_state.get("noisy_vecs")
+            st.session_state.pipeline_doc = dict(
+                original=original_sample, redacted=chunks[0].page_content if chunks else "",
+                raw_head=raw[0][:6].round(3).tolist() if raw is not None else [],
+                noisy_head=noisy[0][:6].round(3).tolist() if noisy is not None else [],
+                noise_ratio=float(np.linalg.norm(noisy[0] - raw[0]) / np.linalg.norm(raw[0])) if raw is not None else 0.0)
             st.success(f"✅ NLP Redaction Complete! Secured {len(chunks)} chunks.")
+
+    if st.button("🧹 Wipe token table and data now", use_container_width=True):
+        wipe_session()
+        st.success("Wiped.")
 
     st.divider()
     st.subheader("🕵️ Agent 2: Active Honey Defense")
@@ -235,7 +261,11 @@ if prompt := st.chat_input("Query your secured data..."):
                 secure_prompt = translator.blur_prompt(prompt)
                 dynamic_k = min(st.session_state.total_chunks, 30) 
                 
-                results = st.session_state.vector_store.similarity_search(secure_prompt, k=dynamic_k)
+                scored = st.session_state.vector_store.similarity_search_with_score(secure_prompt, k=dynamic_k)
+                results = [doc for doc, _ in scored]
+                st.session_state.pipeline_query = dict(
+                    original=prompt, blurred=secure_prompt, k=dynamic_k,
+                    top=[(float(score), doc.page_content[:140]) for doc, score in scored[:5]])
                 safe_context = "\n\n".join([doc.page_content for doc in results])
                 poisoned_context = safe_context + f"\n\n[SYSTEM_NOTE: {CANARY_TOKEN}]"
                 
@@ -275,6 +305,34 @@ if prompt := st.chat_input("Query your secured data..."):
                 
                 except Exception as e:
                     st.error(f"Error connecting to LLM: {e}")
+
+st.divider()
+st.subheader("🔬 Pipeline view")
+doc_info, query_info = st.session_state.get("pipeline_doc"), st.session_state.get("pipeline_query")
+is_admin = user_role == "Admin (Decrypted View)"
+if not doc_info:
+    st.caption("Upload a document and click Encrypt & Embed to see each step.")
+else:
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown("**1. Original**")
+        st.code(doc_info["original"] if is_admin else "(hidden in the Guest view)", language="text")
+    with c2:
+        st.markdown("**2. Redacted (sent onward)**")
+        st.code(doc_info["redacted"][:500], language="text")
+    with c3:
+        st.markdown("**3. Embedding + noise**")
+        st.caption(f"First 6 of 384 numbers, noise ≈ {doc_info['noise_ratio']:.2f}× the vector (ε = {st.session_state.get('epsilon', DEFAULT_EPSILON)})")
+        st.code("clean: " + str(doc_info["raw_head"]) + "\nnoisy: " + str(doc_info["noisy_head"]), language="text")
+    with c4:
+        st.markdown("**4. Retrieved for your last question**")
+        if query_info:
+            st.caption(f"Question sent as: {query_info['blurred']}" + (f"  (you typed: {query_info['original']})" if is_admin else ""))
+            st.caption(f"{query_info['k']} chunks go to the LLM; closest 5:")
+            for score, text in query_info["top"]:
+                st.code(f"{score:.3f}  {text}", language="text")
+        else:
+            st.caption("Ask a question to see which chunks are retrieved.")
 
 st.divider()
 st.subheader("Differential Privacy Proving Ground (PCA)")
