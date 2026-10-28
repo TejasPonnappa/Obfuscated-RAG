@@ -84,12 +84,13 @@ if st.session_state.system_locked:
     st.stop() 
 
 @st.cache_resource
-def get_presidio_analyzer():
-    return build_analyzer()
+def get_presidio_analyzer(use_gliner=False):
+    return build_analyzer(gliner=use_gliner)
 
 def PresidioTranslator():
     """A redactor bound to this session's token table and salt (logic lives in redaction.py)."""
-    return Redactor(get_presidio_analyzer(), st.session_state.secure_mapping, st.session_state.vault_salt)
+    return Redactor(get_presidio_analyzer(st.session_state.get("use_gliner", False)),
+                    st.session_state.secure_mapping, st.session_state.vault_salt)
 
 class PrivacyAwareEmbeddings:
     def __init__(self, base_model):
@@ -144,6 +145,10 @@ with st.sidebar:
     st.divider()
 
     st.subheader("1. Ingest Knowledge Base")
+    st.checkbox("Extra detector: GLiNER (finds more, slower)", key="use_gliner",
+                help="A local model that runs on your machine; no text is sent anywhere. Needs `pip install gliner` and a one-time 1.1 GB "
+                     "download. On three fictional test documents it raised the share of sensitive values hidden from 75-93% to 96-100%, "
+                     "and it also hides a few more ordinary words.")
     uploaded_file = st.file_uploader("Upload Sensitive Document (TXT)", type=["txt"])
     
     if st.button("Encrypt & Embed", use_container_width=True) and uploaded_file:
