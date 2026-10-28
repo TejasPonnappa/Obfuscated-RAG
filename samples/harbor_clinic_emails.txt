@@ -1,0 +1,43 @@
+HARBOR VIEW CLINIC - EMAIL AND CHAT EXPORT (FICTIONAL SAMPLE DATA)
+Everything below is invented for testing.
+
+--- Email 1 ---
+From: Dr. Anika Rao <anika.rao@harborviewclinic.org>
+To: Liam Fitzgerald <liam.f@harborviewclinic.org>
+Subject: new hire paperwork
+
+Hi Liam,
+
+Can you set up Sofia Marchetti in payroll? She joins as a nurse practitioner on a base of USD 91,500 a year. Her number is 415.555.0182 if you need to reach her before Monday, and she lives at 14 Maple Avenue, Apt 3B, Boston, MA 02118. She was born on 3 July 1988, which HR needs for the benefits form.
+
+Thanks,
+Anika
+
+--- Email 2 ---
+From: Liam Fitzgerald
+To: Dr. Anika Rao
+Subject: RE: new hire paperwork
+
+Done. I put Sofia on $7,625 a month and sent her welcome pack to sofia.marchetti@gmail.com. Her employee ID is HV-20418. Her bank account for direct deposit is GB29 NWBK 6016 1331 9268 19.
+
+Also, the receptionist laptop login: user frontdesk, pw: Clinic#Spring24. Please do not forward this.
+
+--- Chat 1, Slack #it-help ---
+[09:14] Omar Haddad: my account got locked again
+[09:15] Priya Nair: What is your username, Omar?
+[09:15] Omar Haddad: ohaddad. the temp password they gave me was Sunrise-Dock-4412
+[09:16] Priya Nair: ok reset it, new one is Blue$Heron2025, change it at first login
+[09:17] Omar Haddad: thanks! btw my cell changed, it is (617) 555 0147 now
+
+--- Email 3 ---
+From: Dr. Anika Rao
+To: Hannah Whitfield
+Subject: reference for Marco
+
+Hannah, Marco Delgado worked under me for three years and I recommend him without reservation. He currently earns around 78 thousand dollars and would want a raise to at least $85,000. You can reach him on marco.delgado@outlook.com or at 22 Pine Street, Cambridge, MA 02139.
+
+--- Chat 2, patient scheduling ---
+[14:02] Hannah Whitfield: patient Eleanor Brooks called, DOB 11/02/1954, wants to move her appointment
+[14:03] Omar Haddad: her insurance member number is W482-993-117, right?
+[14:03] Hannah Whitfield: yes. and she paid the copay with card 5500 0000 0000 0004
+[14:05] Omar Haddad: social on file ends 4421 but the full one is 221-58-9034 if the system asks
