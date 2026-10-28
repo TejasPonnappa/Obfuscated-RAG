@@ -78,3 +78,16 @@ def test_reassemble_undoes_markdown_escaped_brackets(redactor):
     token = redactor.token_for("SALARY", "$85,000")
     escaped = token.replace("[", r"\[").replace("]", r"\]")
     assert redactor.reassemble_text(f"They get {escaped}.") == "They get **$85,000**."
+
+
+def test_a_name_span_that_swallowed_the_next_word_is_trimmed():
+    analyzer = FakeAnalyzer({"PERSON": ["Norma Fisher works"]})        # what the NER model really returned
+    r = Redactor(analyzer, {}, salt=b"s")
+    blurred = r.blur_text("Employee Norma Fisher works in Finance.")
+    assert blurred.endswith(" works in Finance.")                      # the verb is left alone
+    assert list(r.mapping.values()) == ["Norma Fisher"]
+
+
+def test_the_whole_name_in_a_question_beats_a_longer_value_sharing_its_words():
+    r = Redactor(FakeAnalyzer({}), {"[PERSON_AAAA]": "Norma Fisher", "[PERSON_BBBB]": "Norma Fisher works"}, salt=b"s")
+    assert r.blur_prompt("How much is Norma Fisher paid?") == "How much is [PERSON_AAAA] paid?"

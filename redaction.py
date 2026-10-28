@@ -40,17 +40,31 @@ class Redactor:
                 last_end = r.end
         out = text
         for r in sorted(kept, key=lambda r: r.start, reverse=True):
-            out = out[:r.start] + self.token_for(r.entity_type, text[r.start:r.end]) + out[r.end:]
+            end = self._trim_person_end(text, r) if r.entity_type == "PERSON" else r.end
+            out = out[:r.start] + self.token_for(r.entity_type, text[r.start:end]) + out[end:]
         return out
+
+    @staticmethod
+    def _trim_person_end(text, result):
+        """The NER model sometimes swallows the next word ("Norma Fisher works"); a name does not end in a lowercase word."""
+        span = text[result.start:result.end]
+        words = span.split(" ")
+        while len(words) > 1 and words[-1][:1].islower():
+            words.pop()
+        return result.start + len(" ".join(words))
 
     def blur_prompt(self, prompt_text):
         """Swap any known real value (or, for multi-word values, a long word of it) in a user prompt for its token."""
         blurred = prompt_text
-        for token, real_value in sorted(self.mapping.items(), key=lambda item: len(item[1]), reverse=True):
+        by_length = sorted(self.mapping.items(), key=lambda item: len(item[1]), reverse=True)
+        unmatched = []
+        for token, real_value in by_length:                  # whole values first, so "Norma Fisher" wins over its parts
             pattern = re.compile(re.escape(real_value), re.IGNORECASE)
             if pattern.search(blurred):
                 blurred = pattern.sub(token, blurred)
-                continue
+            else:
+                unmatched.append((token, real_value))
+        for token, real_value in unmatched:
             parts = real_value.split()
             if len(parts) > 1:
                 for part in parts:
