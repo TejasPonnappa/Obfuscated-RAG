@@ -1,0 +1,42 @@
+RIVERBEND PROPERTY SERVICES - CUSTOMER LETTERS AND INVOICES (FICTIONAL SAMPLE DATA)
+Every person, number and credential in this file is invented for testing.
+
+Letter 1
+
+Dear Ms. Okonkwo,
+
+Thank you for your complaint about the delayed boiler repair at 87 Willow Crescent, Leeds LS6 2AB. I am sorry it took three visits. Our engineer, Gareth Pugh, has confirmed the fault was a failed pressure valve. We have credited your account, reference RB-55820, with GBP 240.00 and will not charge the call-out fee.
+
+If you would like to discuss this, ring me directly on 0113 496 0721 or write to chidinma.okonkwo@riverbend-support.co.uk and I will pass it on to the customer care manager, Fiona Mackenzie.
+
+Yours sincerely,
+Helen Ashworth, Customer Care
+
+Letter 2
+
+Hello Mr. Jankowski,
+
+Your direct debit for the March service plan did not go through. The mandate shows sort code 20-45-67 and account number 40817263, both held in the name of Piotr Jankowski. Please check your balance, or call us on 07700 900341. If you would rather pay by card, our team can take it by phone, but please never email card details.
+
+Regards,
+Accounts Team
+
+Invoice summary, March
+
+Customer: Santiago Herrera-Lopez, flat 12, Cedar House, 4 Beacon Road, Bristol BS3 4QT
+Service: annual boiler plan, 15 December renewal
+Total due: 389 pounds, which includes a 45 pound admin charge. Paid by Visa ending 4012 on 2 March.
+Online portal username: sherrera, temporary passphrase: Orchid-Lamp-3391 (must be changed at first sign in)
+
+Internal note, staff only
+
+Our engineer Gareth Pugh earns 31,500 pounds a year before overtime, and his manager Fiona Mackenzie is on 46 thousand. Please keep this out of the customer system. The staff rota login is rota_admin and the shared password is Rivers!Bend2024.
+
+Letter 3
+
+To Whom It May Concern,
+
+I am writing on behalf of my mother, Adaeze Okonkwo, who is 81 and lives alone. Her national insurance number is QQ 12 34 56 C and her date of birth is 9 September 1943. Please contact me, her son Emeka, on emeka.okonkwo@gmail.com rather than calling her.
+
+Kind regards,
+Emeka Okonkwo

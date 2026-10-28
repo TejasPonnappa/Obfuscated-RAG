@@ -38,6 +38,20 @@ DOCS = {
         "ssn": ["221-58-9034"],
         "id_number": ["HV-20418", "W482-993-117"],
     },
+    "samples/riverbend_customer_letters.txt": {
+        "name": ["Gareth Pugh", "Fiona Mackenzie", "Helen Ashworth", "Piotr Jankowski", "Santiago Herrera-Lopez",
+                 "Adaeze Okonkwo", "Emeka Okonkwo"],
+        "address": ["87 Willow Crescent", "4 Beacon Road"],
+        "postcode": ["LS6 2AB", "BS3 4QT"],
+        "email": ["chidinma.okonkwo@riverbend-support.co.uk", "emeka.okonkwo@gmail.com"],
+        "phone": ["0113 496 0721", "07700 900341"],
+        "salary": ["31,500 pounds", "46 thousand"],
+        "bank_account": ["20-45-67", "40817263"],
+        "password": ["Orchid-Lamp-3391", "Rivers!Bend2024"],
+        "national_id": ["QQ 12 34 56 C"],
+        "date_of_birth": ["9 September 1943"],
+        "id_number": ["RB-55820"],
+    },
 }
 
 
@@ -62,7 +76,23 @@ def score(path, truth, redactor):
     return hidden, total
 
 
+def extra_hidden(path, truth, redactor):
+    """Values that were hidden but are not in the ground truth (over-redaction), e.g. 'today', 'Friday'."""
+    known = [v.lower() for vs in truth.values() for v in vs]
+    redactor.mapping.clear()
+    redactor.blur_text(open(path, encoding="utf-8").read())
+    return [v for v in redactor.mapping.values() if not any(v.lower() in k or k in v.lower() for k in known)]
+
+
 if __name__ == "__main__":
+    import sys
     analyzer = build_analyzer()
+    if "--gliner" in sys.argv:
+        from gliner_layer import GlinerAnalyzer
+        analyzer = GlinerAnalyzer(analyzer)
     for path, truth in DOCS.items():
-        score(path, truth, Redactor(analyzer, {}, b"x"))
+        redactor = Redactor(analyzer, {}, b"x")
+        score(path, truth, redactor)
+        print(f"  extra values hidden that are not in the ground truth: {len(extra_hidden(path, truth, redactor))}")
+    if hasattr(analyzer, "seconds"):
+        print(f"\nGLiNER time over all runs: {analyzer.seconds:.1f}s")
