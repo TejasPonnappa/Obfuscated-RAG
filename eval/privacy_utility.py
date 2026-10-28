@@ -18,7 +18,8 @@ from sentence_transformers import SentenceTransformer
 
 from analyzer import build_analyzer
 from eval.corpus import make_people, make_queries, make_records
-from noise import DifferentialPrivacyAgent, optimize_privacy_budget
+from eval.legacy_loop import optimize_privacy_budget
+from noise import DifferentialPrivacyAgent
 from redaction import Redactor
 
 KS = (1, 3, 5, 10)
@@ -72,13 +73,16 @@ def run_one(model, analyzer, n_people, corpus_seed, noise_seeds=3):
         rows = {"no_noise": {"queries_plain": recall_at_k(chunks, questions, gold)}}
         loop_eps = [optimize_privacy_budget(chunks)[0] for _ in range(3)]
         rows["loop_epsilon"] = float(np.mean(loop_eps))
-        for label, eps in [(f"eps_{e}", e) for e in (20, 10, 5, 2)] + [("eps_chosen_by_loop", float(np.mean(loop_eps)))]:
+        for label, eps in [(f"eps_{e}", e) for e in (500, 200, 100, 50, 20, 10, 2)] + [("eps_chosen_by_loop", float(np.mean(loop_eps)))]:
             agent = DifferentialPrivacyAgent(epsilon=eps)
-            per_seed = []
+            per_seed, per_seed_noised = [], []
             for s in range(noise_seeds):
                 np.random.seed(s)
-                per_seed.append(recall_at_k(agent.inject_laplace_noise(chunks), questions, gold))
+                noisy_chunks = agent.inject_laplace_noise(chunks)
+                per_seed.append(recall_at_k(noisy_chunks, questions, gold))
+                per_seed_noised.append(recall_at_k(noisy_chunks, agent.inject_laplace_noise(questions), gold))
             rows[label] = {"queries_plain": {k: float(np.mean([r[k] for r in per_seed])) for k in KS},
+                           "queries_noised": {k: float(np.mean([r[k] for r in per_seed_noised])) for k in KS},
                            "noise_norm_over_signal_norm": float(
                                np.linalg.norm(agent.inject_laplace_noise(chunks) - chunks, axis=1).mean()
                                / np.linalg.norm(chunks, axis=1).mean())}
@@ -104,6 +108,9 @@ def run(n_people=40, corpus_seeds=(0, 1, 2, 3)):
                 k: dict(mean=float(np.mean([r[0][scheme][label]["queries_plain"][k] for r in runs])),
                         std=float(np.std([r[0][scheme][label]["queries_plain"][k] for r in runs]))) for k in KS}
             if label != "no_noise":
+                summary[scheme][label]["queries_noised"] = {
+                    k: float(np.mean([r[0][scheme][label]["queries_noised"][k] for r in runs])) for k in KS}
+            if label != "no_noise":
                 summary[scheme][label]["noise_norm_over_signal_norm"] = float(
                     np.mean([r[0][scheme][label]["noise_norm_over_signal_norm"] for r in runs]))
     return summary
@@ -127,4 +134,5 @@ if __name__ == "__main__":
                 print(f"  epsilon the app's loop picks (mean): {row['mean']:.2f}")
                 continue
             extra = "" if label == "no_noise" else f"   noise/signal {row['noise_norm_over_signal_norm']:.1f}x"
-            print(f"  {label:20s} {row[1]['mean']:.2f} / {row[5]['mean']:.2f} / {row[10]['mean']:.2f}  (+/- {row[5]['std']:.2f}){extra}")
+            noised = "" if label == "no_noise" else f"   | queries noised too: {row['queries_noised'][1]:.2f} / {row['queries_noised'][5]:.2f} / {row['queries_noised'][10]:.2f}"
+            print(f"  {label:20s} {row[1]['mean']:.2f} / {row[5]['mean']:.2f} / {row[10]['mean']:.2f}  (+/- {row[5]['std']:.2f}){extra}{noised}")
