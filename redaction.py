@@ -9,6 +9,7 @@ cannot be guessed from the value.
 import hashlib
 import hmac
 import re
+from types import SimpleNamespace
 
 
 class Redactor:
@@ -30,19 +31,50 @@ class Redactor:
         raise RuntimeError("could not allocate a unique token")
 
     def blur_text(self, text):
-        """Replace every detected entity with its token (longest non-overlapping match first)."""
-        results = self.analyzer.analyze(text=text, language="en")
-        ordered = sorted(results, key=lambda r: (r.start, -(r.end - r.start)))
-        kept, last_end = [], -1
-        for r in ordered:
-            if r.start >= last_end:
-                kept.append(r)
-                last_end = r.end
+        """Replace every detected entity with its token, then hide any name found once everywhere it appears."""
+        kept = self._resolve_overlaps(text, self.analyzer.analyze(text=text, language="en"))
         out = text
         for r in sorted(kept, key=lambda r: r.start, reverse=True):
             end = self._trim_person_end(text, r) if r.entity_type == "PERSON" else r.end
             out = out[:r.start] + self.token_for(r.entity_type, text[r.start:end]) + out[end:]
-        return out
+        return self._propagate_names(out)
+
+    @staticmethod
+    def _resolve_overlaps(text, results):
+        """Most confident detections first; a weaker overlapping span is cut back to the part that overlaps nothing.
+        (The name model often returns "Daniel O'Connor - daniel@x.com" as one name; the email must still be found.)"""
+        kept = []
+        for r in sorted(results, key=lambda r: (-getattr(r, "score", 1.0), -(r.end - r.start), r.start)):
+            pieces = [(r.start, r.end)]
+            for k in kept:
+                free = []
+                for s, e in pieces:
+                    if e <= k.start or s >= k.end:
+                        free.append((s, e))
+                    else:
+                        if s < k.start:
+                            free.append((s, k.start))
+                        if e > k.end:
+                            free.append((k.end, e))
+                pieces = free
+            for s, e in pieces:
+                while s < e and text[s] in " \t\n-,;:()":
+                    s += 1
+                while e > s and text[e - 1] in " \t\n-,;:()":
+                    e -= 1
+                if e - s >= 2:
+                    kept.append(SimpleNamespace(start=s, end=e, entity_type=r.entity_type))
+        return kept
+
+    _NAME = re.compile(r"[A-Z][a-zA-Z'-]+(?: [A-Z][a-zA-Z'-]+)+")
+
+    def _propagate_names(self, text):
+        """A name found once is hidden everywhere: later mentions the detector missed, and first or last names on their own."""
+        names = [v for t, v in self.mapping.items() if t.startswith("[PERSON_") and self._NAME.fullmatch(v)]
+        parts = sorted({w for v in names for w in v.split(" ") if len(w) >= 3}, key=len, reverse=True)
+        for value in sorted(names, key=len, reverse=True) + parts:
+            text = re.sub(r"(?<![\w\[])" + re.escape(value) + r"(?![\w\]])", lambda m, v=value: self.token_for("PERSON", v), text)
+        return text
 
     @staticmethod
     def _trim_person_end(text, result):

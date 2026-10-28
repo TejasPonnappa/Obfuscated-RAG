@@ -91,3 +91,35 @@ def test_a_name_span_that_swallowed_the_next_word_is_trimmed():
 def test_the_whole_name_in_a_question_beats_a_longer_value_sharing_its_words():
     r = Redactor(FakeAnalyzer({}), {"[PERSON_AAAA]": "Norma Fisher", "[PERSON_BBBB]": "Norma Fisher works"}, salt=b"s")
     assert r.blur_prompt("How much is Norma Fisher paid?") == "How much is [PERSON_AAAA] paid?"
+
+
+class ScoredAnalyzer:
+    """Returns fixed spans with scores, like Presidio does."""
+
+    def __init__(self, spans):
+        self.spans = spans                            # [(start, end, entity_type, score)]
+
+    def analyze(self, text, language="en"):
+        return [SimpleNamespace(start=s, end=e, entity_type=t, score=sc) for s, e, t, sc in self.spans]
+
+
+def test_a_confident_email_survives_inside_a_longer_name_span():
+    text = "Daniel O'Connor - d.o@x.com is here"
+    r = Redactor(ScoredAnalyzer([(0, 27, "PERSON", 0.85), (18, 27, "EMAIL_ADDRESS", 1.0)]), {}, salt=b"s")
+    blurred = r.blur_text(text)
+    assert "d.o@x.com" not in blurred and "Daniel" not in blurred
+    assert {"d.o@x.com", "Daniel O'Connor"} <= set(r.mapping.values())
+
+
+def test_a_name_found_once_is_hidden_everywhere_including_first_and_last_names_alone():
+    text = "Aisha Bello joined. Later Aisha Bello left. Aisha's desk is empty. Bello agreed."
+    r = Redactor(ScoredAnalyzer([(0, 11, "PERSON", 0.85)]), {}, salt=b"s")          # only the first mention is detected
+    blurred = r.blur_text(text)
+    assert "Aisha" not in blurred and "Bello" not in blurred
+    assert r.reassemble_text(blurred).replace("**", "") == text                      # still reversible
+
+
+def test_lowercase_words_are_not_mistaken_for_names():
+    text = "Ann Lee spoke. The lee side of the boat was calm."
+    r = Redactor(ScoredAnalyzer([(0, 7, "PERSON", 0.85)]), {}, salt=b"s")
+    assert "lee side" in r.blur_text(text)                                           # matching is case-sensitive
