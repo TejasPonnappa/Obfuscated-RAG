@@ -22,3 +22,10 @@ def test_similarity_is_one_for_identical_strings_ignoring_case():
 def test_canary_detection_looks_for_the_secret_part():
     assert canary_leaked(f"here you go: {CANARY_TOKEN}")
     assert not canary_leaked("nothing to see")
+
+
+def test_idle_check():
+    from config import IDLE_LIMIT_SECONDS, is_idle
+    assert not is_idle(None, 1000.0)                                  # never idle before the first interaction
+    assert not is_idle(1000.0, 1000.0 + IDLE_LIMIT_SECONDS)           # exactly at the limit is not yet idle
+    assert is_idle(1000.0, 1000.0 + IDLE_LIMIT_SECONDS + 1)
