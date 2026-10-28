@@ -1,6 +1,6 @@
 # Obfuscated-RAG
 
-A Streamlit app that lets you ask questions over a sensitive text document using a cloud LLM (Groq) **without ever sending the raw sensitive data to the llm**. It combines two privacy techniques, PII redaction and differential-privacy noise on embeddings and includes a self-auditing "red team" agent that tests whether the pipeline actually leaks anything.
+A Streamlit app that lets you ask questions over a sensitive text document using a cloud LLM (Groq) **without ever sending the raw sensitive data to the llm**. It combines two privacy techniques, PII redaction and Laplace noise on the embeddings, and includes a self-auditing "red team" agent that tests whether the pipeline actually leaks anything.
 
 ## The problem this solves
 
@@ -15,7 +15,7 @@ Presidio scans for PII → replaces with tokens like [PERSON_A1B2], [SALARY_C3D4
       ↓
 Text is chunked (500 chars, 50 overlap)
       ↓
-Chunks are embedded (MiniLM) → Laplace noise added to embedding vectors (DP)
+Chunks are embedded (MiniLM) → Laplace noise added to embedding vectors (light noise, not a formal DP guarantee)
       ↓
 Stored in a local Chroma vector database
       ↓
@@ -41,10 +41,12 @@ If role = Guest → tokens stay redacte(?i)(?:password|secret)\s*(?:[:=]|\s+is\s
 ### 2. Chunking
 - `RecursiveCharacterTextSplitter` splits the redacted document into 500-character chunks with 50-character overlap — standard RAG chunking so each chunk is small enough to embed and retrieve meaningfully, with overlap to avoid cutting sentences awkwardly at boundaries.
 
-### 3. Embedding + differential privacy noise (`PrivacyAwareEmbeddings`, `gan_logic.py`)
+### 3. Embedding + noise (`PrivacyAwareEmbeddings`, `noise.py`)
 - Chunks are embedded using `all-MiniLM-L6-v2` (a local HuggingFace sentence-embedding model — text → vector of numbers representing meaning).
-- Before storing, `optimize_privacy_budget()` adds **Laplace noise** to every embedding vector (`DifferentialPrivacyAgent`). This is standard differential privacy: noise scaled by `sensitivity / epsilon`, so smaller epsilon = more noise = harder to reverse-engineer the original vector.
-- To decide *how much* noise is enough, a `FastDiscriminator` (logistic regression) tries to tell clean vectors apart from noisy ones. If it can still tell them apart easily (accuracy > 0.55), the loop adds more noise (`epsilon /= 1.5`, up to 5 tries) and re-checks. Once the noisy vectors are indistinguishable enough, that noise level is locked in.
+- Before storing, `DifferentialPrivacyAgent` adds **Laplace noise** to every embedding vector. The noise is scaled by `sensitivity / epsilon`, so smaller epsilon = more noise. The user's question gets the same noise at search time.
+- How much noise? An earlier version used a "GAN-style" loop: a `FastDiscriminator` (logistic regression) tried to tell clean vectors from noisy ones and kept lowering epsilon. I removed it. A linear model can't see zero-mean noise, so it kept adding more until search was random guessing. Now epsilon is fixed: default **100**, with a slider in the sidebar (`DEFAULT_EPSILON` in `noise.py`).
+- At epsilon 100 the noise is about 0.3× the size of the vector, and search still finds the right chunk about 96% as often as with no noise (measured on a fake HR document, 120 chunks, `eval/privacy_utility.py`). Below about 50 it gets bad (epsilon 20 finds it only about 30% as often).
+- This is light obfuscation of the stored vectors, **not a real differential privacy guarantee** (that needs far more noise, and then search stops working). The vectors never leave your machine anyway, so the noise does not protect you from the LLM. The redaction in step 1 does that.
 
 ### 4. Vector storage
 - Noisy embeddings + redacted chunk text are stored in a local **Chroma** vector database — this only ever contains tokens, never raw PII.
@@ -73,7 +75,7 @@ If role = Guest → tokens stay redacte(?i)(?:password|secret)\s*(?:[:=]|\s+is\s
 | File | Responsibility |
 |---|---|
 | `app.py` | Streamlit UI, PII redaction (Presidio), RAG pipeline, LLM calls, audit UI, PCA visualization |
-| `noise.py` | Differential-privacy noise injection + noise-level calibration loop |
+| `noise.py` | Laplace noise on the embeddings, with a measured default epsilon (100) |
 
 ## Summary
 The document is first analyzed by Presidio for any PII. This is redacted. Then we chunk it. We add laplacian noise to this. When the user asks a questions we run
