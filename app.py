@@ -13,6 +13,7 @@ import pandas as pd
 import altair as alt
 
 from analyzer import build_analyzer
+from config import groq_model
 from noise import (DEFAULT_EPSILON, EPSILON_CHOICES, MIN_USABLE_EPSILON, DifferentialPrivacyAgent,
                    noise_to_signal_ratio, retention_estimate)
 from redaction import Redactor
@@ -33,7 +34,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)
+    llm = ChatGroq(model=groq_model(), temperature=0.1)
 except Exception as e:
     st.error("⚠️ Could not initialize Groq API. Make sure your .env file is set up correctly.")
     llm = None
