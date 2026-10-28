@@ -1,0 +1,48 @@
+NORTHWIND LOGISTICS - INTERNAL HR AND IT RECORDS (FICTIONAL SAMPLE DATA)
+All people, numbers and credentials below are invented for testing.
+
+=== 1. Leadership meeting minutes, 14 March ===
+
+Attendees: Priya Raghunathan (VP Finance), Marcus Thompson (Head of Engineering), Elena Vasquez (HR Director) and Tomasz Kowalski (Security Lead).
+
+Elena opened by saying the compensation review is due before the end of the quarter. Marcus asked whether his senior engineers could move to the next band. Priya said the budget allows it, but only if the Singapore hires slip to the autumn. Tomasz reminded everyone that salary spreadsheets must not be emailed, and that anything sensitive goes through the HR portal.
+
+Action items: Elena will send the revised bands to Priya by Friday. Marcus will nominate three engineers. Tomasz will rotate the shared service accounts, since the old ones were pasted into a ticket last month.
+
+=== 2. Payroll memo ===
+
+To: Priya Raghunathan
+From: Elena Vasquez
+
+Please approve the following adjustments, effective 1 April.
+
+Marcus Thompson moves from $118,500 to $126,000 per year. Aisha Bello, our new data engineer, starts at $97,250. Daniel O'Connor in logistics planning is getting a raise to 82,000 USD. Mei-Ling Chen's offer was agreed at $104k plus a signing bonus of $5,000.
+
+Elena Vasquez herself remains at $152,000. Please treat all of this as confidential.
+
+=== 3. Employee contact sheet ===
+
+Aisha Bello - aisha.bello@northwind-logistics.com - mobile (415) 555-0142 - home address 2218 Alder Street, Oakland, CA 94607.
+Daniel O'Connor - daniel.oconnor@northwind-logistics.com - desk 212-555-0178 - emergency contact is his wife Maureen O'Connor, (212) 555-0199.
+Mei-Ling Chen - mei-ling.chen@northwind-logistics.com - mobile +1 312 555 0116.
+Tomasz Kowalski - tomasz.kowalski@northwind-logistics.com - phone 617-555-0133.
+
+Aisha's social security number was entered in the onboarding form as 512-44-7391, and Daniel's as 498-27-1156. Both forms are stored in the HR portal.
+
+=== 4. IT support ticket 4471 ===
+
+Opened by Tomasz Kowalski. The backup server login was shared in chat by mistake. The username is svc-backup and the password is Wint3r!Harbor92. Please change it today. The VPN admin passcode: Lantern-Coast-58 was also exposed, and the database secret is "blue.fox.77" (rotate it too).
+
+For reference, the payroll database sits at 10.20.4.37 and the old jump host was 192.168.14.9. A test payment used the company card 4111 1111 1111 1111 with expiry 09/28.
+
+=== 5. Incident report, 2 May ===
+
+At 03:12 the monitoring system flagged repeated failed logins against the HR portal from a single address. Tomasz traced them to a laptop belonging to Bob Tanaka, the contractor whose real name is Robert Tanaka. Bob had reused his old portal login, bob.tanaka@northwind-logistics.com, and the password he used was tanaka_2019_summer. His account was locked.
+
+Elena Vasquez interviewed Robert the next morning. He confirmed he had not shared his login. Marcus Thompson reviewed the logs and found nothing else. Priya's team was told that no payroll data was accessed.
+
+=== 6. Performance review, Mei-Ling Chen ===
+
+Mei-Ling has been outstanding this year. She rebuilt the routing optimiser, cut delivery delays by a fifth and mentored Aisha through her first quarter. Marcus Thompson recommends promotion. Her current salary of $98,000 is below the market rate, which is why the offer above was raised.
+
+Reviewer's note: Mei-Ling asked that her review is not shared with Daniel O'Connor.
