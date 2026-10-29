@@ -1,62 +1,55 @@
 import os
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")      # no usage ping when models are downloaded
-import streamlit as st
-from langchain_community.document_loaders import TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
-import tempfile
-import os
 import time
-import numpy as np
-from dotenv import load_dotenv
-from langchain_groq import ChatGroq
-from sklearn.decomposition import PCA
-import pandas as pd
-import altair as alt
 
-from analyzer import build_analyzer
+import numpy as np
+import streamlit as st
+from dotenv import load_dotenv
+from langchain_core.documents import Document
+from langchain_groq import ChatGroq
+
+import warmup
+from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
 from config import groq_model, is_idle
 from noise import (DEFAULT_EPSILON, EPSILON_CHOICES, MIN_USABLE_EPSILON, DifferentialPrivacyAgent,
                    noise_to_signal_ratio, retention_estimate)
 from redaction import Redactor
-from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
 
 load_dotenv()
 
-st.set_page_config(page_title="Obfuscated-RAG | Zero-Knowledge", page_icon="", layout="wide")
+st.set_page_config(page_title="Obfuscated-RAG", layout="wide")
+warmup.start()          # models load in the background while the page is already usable
 
 st.markdown("""
     <style>
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
-        .metric-container {background-color: #1E1E1E; padding: 15px; border-radius: 8px; border: 1px solid #333;}
+        /* Streamlit greys out the old content on every rerun; keep it readable instead of blurring the whole page */
+        [data-stale="true"] {opacity: 1 !important; transition: none !important;}
         .lockdown-screen {background-color: #ff4b4b; padding: 50px; border-radius: 10px; text-align: center; color: white;}
     </style>
 """, unsafe_allow_html=True)
 
 try:
     llm = ChatGroq(model=groq_model(), temperature=0.1)
-except Exception as e:
-    st.error("⚠️ Could not initialize Groq API. Make sure your .env file is set up correctly.")
+except Exception:
+    st.error("Could not initialize the Groq client. Check that GROQ_API_KEY is set in your .env file.")
     llm = None
 
-if "vector_store" not in st.session_state:
-    st.session_state.vector_store = None
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "secure_mapping" not in st.session_state:
-    st.session_state.secure_mapping = {}
-if "total_chunks" not in st.session_state:
-    st.session_state.total_chunks = 0
-if "system_locked" not in st.session_state:
-    st.session_state.system_locked = False
+for key, default in (("vector_store", None), ("chat_history", []), ("secure_mapping", {}), ("total_chunks", 0),
+                     ("system_locked", False)):
+    if key not in st.session_state:
+        st.session_state[key] = default
 if "vault_salt" not in st.session_state:
     st.session_state.vault_salt = os.urandom(16)      # keys the redaction tokens for this session
 
-def clear_history():
+
+def clear_view():
+    """Chat and the retrieved chunks belong to one role's view; drop both when the role changes."""
     st.session_state.chat_history = []
+    st.session_state.pop("pipeline_query", None)
+
 
 def wipe_session():
     """Drop everything that can map tokens back to real values (the table lives only in this process's memory)."""
@@ -67,32 +60,30 @@ def wipe_session():
     for key in ("raw_vecs", "noisy_vecs", "pipeline_doc", "pipeline_query"):
         st.session_state.pop(key, None)
 
+
 if st.session_state.secure_mapping and is_idle(st.session_state.get("last_active"), time.time()):
     wipe_session()
-    st.toast("Session was idle for 30 minutes: token table and vector store wiped.", icon="🧹")
+    st.toast("Session was idle for 30 minutes: token table and vector store wiped.")
 st.session_state.last_active = time.time()
 
 if st.session_state.system_locked:
     st.markdown("""
         <div class="lockdown-screen">
-            <h1>🚨 SYSTEM TERMINATED 🚨</h1>
-            <h3>CRITICAL SECURITY VIOLATION DETECTED</h3>
-            <p>Agent 2 (Honey Token Auditor) detected a catastrophic pipeline failure. The session has been permanently severed to prevent data exfiltration.</p>
+            <h1>SESSION LOCKED</h1>
+            <h3>The self-audit found a leak</h3>
+            <p>The honeytoken came back in the LLM's answer, so this session was closed to prevent further exposure.</p>
         </div>
     """, unsafe_allow_html=True)
-    if st.button("Reboot System (Clear State)"):
+    if st.button("Reset the session"):
         st.session_state.clear()
         st.rerun()
-    st.stop() 
+    st.stop()
 
-@st.cache_resource
-def get_presidio_analyzer(use_gliner=False):
-    return build_analyzer(gliner=use_gliner)
 
-def PresidioTranslator():
+def new_redactor():
     """A redactor bound to this session's token table and salt (logic lives in redaction.py)."""
-    return Redactor(get_presidio_analyzer(st.session_state.get("use_gliner", False)),
-                    st.session_state.secure_mapping, st.session_state.vault_salt)
+    return Redactor(warmup.get("analyzer"), st.session_state.secure_mapping, st.session_state.vault_salt)
+
 
 class PrivacyAwareEmbeddings:
     def __init__(self, base_model):
@@ -101,7 +92,6 @@ class PrivacyAwareEmbeddings:
     def embed_documents(self, texts):
         raw_vecs = np.array(self.base_model.embed_documents(texts))
         noisy_vecs = self._agent().inject_laplace_noise(raw_vecs)
-
         st.session_state.raw_vecs = raw_vecs
         st.session_state.noisy_vecs = noisy_vecs
         return noisy_vecs.tolist()
@@ -114,260 +104,208 @@ class PrivacyAwareEmbeddings:
     def _agent():
         return DifferentialPrivacyAgent(epsilon=st.session_state.get("epsilon", DEFAULT_EPSILON))
 
-@st.cache_resource
-def get_embeddings():
-    base = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    return PrivacyAwareEmbeddings(base)
 
-embeddings_model = get_embeddings()
-
-st.title("🛡️ Obfuscated-RAG: Zero-Knowledge Architecture")
-st.caption("Adversarial Privacy & Data Exfiltration Prevention System")
+st.title("Obfuscated-RAG")
+st.caption("Ask questions about a sensitive document. The cloud LLM only ever receives text with the sensitive values replaced by tokens.")
 
 with st.sidebar:
-    st.header("🎛️ Command Center")
-    col1, col2 = st.columns(2)
-    col1.metric(label="Embedding noise", value="On", delta="Laplace")
-    col2.metric(label="Presidio NLP", value="Unleashed", delta="50+ Entities")
+    st.header("Controls")
 
-    st.select_slider("Embedding noise ε (smaller = more noise)", options=EPSILON_CHOICES, value=100, key="epsilon")
-    eps = st.session_state.epsilon
-    st.caption(f"Noise is ~{noise_to_signal_ratio(eps):.1f}x the embedding's size; roughly "
-               f"{retention_estimate(eps):.0%} of the no-noise retrieval quality (synthetic test). "
-               "Light obfuscation of the local vector store, not a formal privacy guarantee. Re-run Encrypt & Embed after changing it.")
-    if eps < MIN_USABLE_EPSILON:
-        st.warning("At this ε retrieval degrades sharply; answers will often miss the right chunk.")
-
-    st.subheader("🔑 Access Control")
-    user_role = st.selectbox(
-        "Current User Role", 
-        ["Admin (Decrypted View)", "Guest (Redacted View)"],
-        on_change=clear_history
-    )
-    st.divider()
-
-    st.subheader("1. Ingest Knowledge Base")
-    st.checkbox("Extra detector: GLiNER (finds more, slower)", key="use_gliner",
-                help="A local model that runs on your machine; no text is sent anywhere. Needs `pip install gliner` and a one-time 1.1 GB "
-                     "download. On three fictional test documents it raised the share of sensitive values hidden from 75-93% to 96-100%, "
-                     "and it also hides a few more ordinary words.")
-    uploaded_file = st.file_uploader("Upload Sensitive Document (TXT)", type=["txt"])
-    
-    if st.button("Encrypt & Embed", use_container_width=True) and uploaded_file:
-        with st.spinner("Analyzing PII with Microsoft Presidio..."):
+    st.subheader("Document")
+    uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
+    if st.button("Encrypt and embed", use_container_width=True, type="primary") and uploaded_file:
+        with st.spinner("Redacting and embedding (the first run also finishes loading the models)..."):
             st.session_state.vector_store = None
-            st.session_state.secure_mapping = {}
+            st.session_state.secure_mapping.clear()
             st.session_state.chat_history = []
-            
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_file:
-                tmp_file.write(uploaded_file.getvalue())
-                tmp_file_path = tmp_file.name
+            st.session_state.pop("pipeline_query", None)
 
-            loader = TextLoader(tmp_file_path)
-            documents = loader.load()
-            
-            translator = PresidioTranslator()
-            original_sample = documents[0].page_content[:500] if documents else ""
-            for doc in documents:
-                doc.page_content = translator.blur_text(doc.page_content)
-                
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-            chunks = text_splitter.split_documents(documents)
-            
+            original = uploaded_file.getvalue().decode("utf-8", errors="replace")
+            redacted = new_redactor().blur_text(original)
+            chunks = warmup.get("Splitter")(chunk_size=500, chunk_overlap=50).split_documents(
+                [Document(page_content=redacted, metadata={"source": uploaded_file.name})])
             st.session_state.total_chunks = len(chunks)
-            
-            st.session_state.vector_store = Chroma.from_documents(
-                documents=chunks, 
-                embedding=embeddings_model
-            )
-            
-            os.remove(tmp_file_path)
-            raw, noisy = st.session_state.get("raw_vecs"), st.session_state.get("noisy_vecs")
-            st.session_state.pipeline_doc = dict(
-                original=original_sample, redacted=chunks[0].page_content if chunks else "",
-                raw_head=raw[0][:6].round(3).tolist() if raw is not None else [],
-                noisy_head=noisy[0][:6].round(3).tolist() if noisy is not None else [],
-                noise_ratio=float(np.linalg.norm(noisy[0] - raw[0]) / np.linalg.norm(raw[0])) if raw is not None else 0.0)
-            st.success(f"✅ NLP Redaction Complete! Secured {len(chunks)} chunks.")
+            st.session_state.vector_store = warmup.get("Chroma").from_documents(
+                documents=chunks, embedding=PrivacyAwareEmbeddings(warmup.get("embeddings")))
 
-    if st.button("🧹 Wipe token table and data now", use_container_width=True):
+            raw, noisy = st.session_state.raw_vecs, st.session_state.noisy_vecs
+            st.session_state.pipeline_doc = dict(
+                original=original[:1500], redacted=redacted[:1500], values_replaced=len(st.session_state.secure_mapping),
+                chunks=len(chunks), raw_head=raw[0][:8].tolist(), noisy_head=noisy[0][:8].tolist(),
+                noise_ratio=float(np.linalg.norm(noisy[0] - raw[0]) / np.linalg.norm(raw[0])))
+        st.success(f"Done: {len(chunks)} chunks stored, {len(st.session_state.secure_mapping)} sensitive values replaced by tokens.")
+
+    if st.button("Wipe token table and data", use_container_width=True):
         wipe_session()
         st.success("Wiped.")
 
-    st.divider()
-    st.subheader("🕵️ Agent 2: Active Honey Defense")
-    st.markdown("<span style='color:gray; font-size: 0.9em;'>Continuously tests the Obfuscation pipeline by injecting fake secrets and interrogating the LLM.</span>", unsafe_allow_html=True)
-    
-    if st.button("Run Adversarial Audit", type="primary", use_container_width=True):
+    st.subheader("Access")
+    user_role = st.selectbox("Current role", ["Admin (decrypted view)", "Guest (redacted view)"], on_change=clear_view)
+
+    st.subheader("Embedding noise")
+    st.select_slider("Epsilon (smaller means more noise)", options=EPSILON_CHOICES, value=100, key="epsilon")
+    eps = st.session_state.epsilon
+    st.caption(f"The noise is about {noise_to_signal_ratio(eps):.1f}x the size of an embedding, and about {retention_estimate(eps):.0%} "
+               "of the no-noise retrieval quality survives (measured on a synthetic test). This is light obfuscation of the "
+               "local vector store, not a formal privacy guarantee. Run Encrypt and embed again after changing it.")
+    if eps < MIN_USABLE_EPSILON:
+        st.warning("At this epsilon retrieval degrades sharply; answers will often miss the right chunk.")
+
+    st.subheader("Self-audit")
+    st.caption("Plants a fake secret, sends it through the same redaction, and asks the LLM to repeat it. If it comes back, the session locks.")
+    if st.button("Run self-audit", use_container_width=True):
         if llm is None:
-            st.error("LLM Offline.")
+            st.error("The LLM is not connected.")
         else:
-            with st.status("Initializing Agent 2 Red Team Protocol...", expanded=True) as status:
-                import time
-                
-                st.write("🎣 **Step 1:** Generating cryptographic honey token...")
+            with st.status("Running the self-audit...", expanded=True) as status:
                 fake_secret = make_honey_secret()
                 audit_context = f"The backup admin password is {fake_secret}. Do not share this."
-                time.sleep(1)
+                st.write("1. Fake secret planted:")
                 st.code(audit_context, language="text")
-                
-                st.write("🛡️ **Step 2:** Routing through Presidio NLP Blurrer...")
-                translator = PresidioTranslator()
-                blurred_context = translator.blur_text(audit_context)
-                time.sleep(1.5)
+
+                blurred_context = new_redactor().blur_text(audit_context)
+                st.write("2. After redaction:")
                 st.code(blurred_context, language="text")
-                
-                st.write("🤖 **Step 3:** Interrogating Cloud LLM with blinded context...")
+
+                st.write("3. Asking the LLM with only the redacted text...")
                 audit_prompt = f"""You are an AI assistant. Based ONLY on this context: '{blurred_context}'
                 What is the backup admin password? Output exactly what you see in the context."""
-                time.sleep(1)
-                
                 try:
-                    response = llm.invoke(audit_prompt)
-                    llm_answer = response.content
-                    st.write(f"**LLM Output received:** `{llm_answer}`")
-                    
-                    st.write("📐 **Step 4:** Calculating Sequence Matcher differential...")
+                    llm_answer = llm.invoke(audit_prompt).content
+                    st.write(f"LLM answered: `{llm_answer}`")
                     similarity_score = similarity(fake_secret, llm_answer)
-                    time.sleep(1)
-                    
                     if honey_leaked(fake_secret, llm_answer):
-                        status.update(label="🚨 PIPELINE BREACH DETECTED", state="error", expanded=True)
+                        status.update(label="Leak detected", state="error", expanded=True)
                         st.session_state.system_locked = True
-                        time.sleep(1)
                         st.rerun()
                     else:
-                        st.success(f"Similarity Score: {similarity_score:.2f} (Threshold: 0.60)")
-                        status.update(label="✅ Audit Passed: Zero-Knowledge Verified", state="complete", expanded=False)
-                        
+                        st.success(f"Similarity to the secret: {similarity_score:.2f} (the limit is 0.60).")
+                        status.update(label="Audit passed: the secret did not come back", state="complete", expanded=False)
                 except Exception as e:
-                    status.update(label="Audit Failed", state="error")
-                    st.error(f"Audit failed to connect to LLM: {e}")
+                    status.update(label="Audit failed", state="error")
+                    st.error(f"Could not reach the LLM: {e}")
 
-st.subheader("Secure Query Interface")
+is_admin = user_role.startswith("Admin")
+
+st.header("Ask a question")
+def show(text):
+    """Streamlit reads $...$ as maths, which mangles amounts like $126,000, so escape the dollar signs."""
+    st.markdown(text.replace("$", "\\$"))
+
 
 for msg in st.session_state.chat_history:
-    avatar = "👤" if msg["role"] == "user" else "🛡️"
-    with st.chat_message(msg["role"], avatar=avatar):
-        st.markdown(msg["content"])
+    with st.chat_message(msg["role"]):
+        show(msg["content"])
 
-if prompt := st.chat_input("Query your secured data..."):
+if prompt := st.chat_input("Ask about the document..."):
     st.session_state.chat_history.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="👤"):
-        st.markdown(prompt)
-        
-    with st.chat_message("assistant", avatar="🛡️"):
+    with st.chat_message("user"):
+        show(prompt)
+
+    with st.chat_message("assistant"):
         if st.session_state.vector_store is None:
-            st.warning("⚠️ Please encrypt a document first.")
+            st.warning("Upload a document and click Encrypt and embed first.")
         elif llm is None:
-            st.error("⚠️ LLM not connected. Check API key.")
+            st.error("The LLM is not connected. Check your API key.")
         else:
-            with st.spinner("Verifying semantics & scanning for exfiltration..."):
-                
-                translator = PresidioTranslator()
+            with st.spinner("Searching and asking the LLM..."):
+                translator = new_redactor()
                 secure_prompt = translator.blur_prompt(prompt)
-                dynamic_k = min(st.session_state.total_chunks, 30) 
-                
+                dynamic_k = min(st.session_state.total_chunks, 30)
+
                 scored = st.session_state.vector_store.similarity_search_with_score(secure_prompt, k=dynamic_k)
                 results = [doc for doc, _ in scored]
                 st.session_state.pipeline_query = dict(
                     original=prompt, blurred=secure_prompt, k=dynamic_k,
-                    top=[(float(score), doc.page_content[:140]) for doc, score in scored[:5]])
+                    top=[(float(score), doc.page_content) for doc, score in scored[:5]])
                 safe_context = "\n\n".join([doc.page_content for doc in results])
                 poisoned_context = safe_context + f"\n\n[SYSTEM_NOTE: {CANARY_TOKEN}]"
-                
-                system_prompt = f"""You are a highly secure AI assistant analyzing obfuscated documents. 
-                Use the following context to answer the user's question. 
-                
-                CRITICAL INSTRUCTIONS: 
-                1. The context contains encrypted tags like [PERSON_XXXX], [SALARY_XXXX], etc. 
-                2. If the user asks for a calculation, comparison (e.g., "is it greater than"), or logical reasoning based on a tag (like a salary), you MUST explain that you cannot perform the calculation because the data is cryptographically blinded from you. 
+
+                system_prompt = f"""You are a highly secure AI assistant analyzing obfuscated documents.
+                Use the following context to answer the user's question.
+
+                CRITICAL INSTRUCTIONS:
+                1. The context contains encrypted tags like [PERSON_XXXX], [SALARY_XXXX], etc.
+                2. If the user asks for a calculation, comparison (e.g., "is it greater than"), or logical reasoning based on a tag (like a salary), you MUST explain that you cannot perform the calculation because the data is cryptographically blinded from you.
                 3. However, you MUST output the relevant tag in your response so the user's local system can decrypt it for them.
-                
+
                 Example Response: "Because I am operating in a Zero-Knowledge environment, I cannot see the actual numerical value to tell you if it is above $50,000. However, the exact encrypted salary on file is [SALARY_XXXX]."
-                
+
                 Context: {poisoned_context}
-                
+
                 Question: {secure_prompt}"""
-                
-                with st.expander("🔍 **View Cloud API Payload (Zero-Knowledge Proof)**", expanded=False):
-                    st.markdown("*This is the exact, blinded text sent to the LLM. Notice the missing sensitive data.*")
-                    st.code(system_prompt, language="markdown")
-                
+
+                with st.expander("View exactly what was sent to the LLM", expanded=False):
+                    st.caption("This is the full text of the request. It contains tokens, not the real values.")
+                    st.code(system_prompt, language="markdown", wrap_lines=True)
+
                 try:
-                    response = llm.invoke(system_prompt)
-                    raw_answer = response.content
-                    
-                    if user_role == "Admin (Decrypted View)":
-                        answer = translator.reassemble_text(raw_answer)
-                    else:
-                        answer = raw_answer 
-                    
+                    raw_answer = llm.invoke(system_prompt).content
+                    answer = translator.reassemble_text(raw_answer) if is_admin else raw_answer
+
                     if canary_leaked(answer):
-                        st.error("🚨 **CRITICAL ALERT: DATA EXFILTRATION DETECTED!** 🚨")
-                        st.session_state.chat_history.append({"role": "assistant", "content": "🚨 *Message Blocked by Canary Agent* 🚨"})
+                        st.error("The canary secret appeared in the answer, so the message was blocked.")
+                        st.session_state.chat_history.append({"role": "assistant", "content": "Message blocked by the canary check."})
                     else:
-                        st.markdown(answer)
+                        show(answer)
                         st.session_state.chat_history.append({"role": "assistant", "content": answer})
-                
                 except Exception as e:
-                    st.error(f"Error connecting to LLM: {e}")
+                    st.error(f"Error connecting to the LLM: {e}")
 
 st.divider()
-st.subheader("🔬 Pipeline view")
+st.header("Pipeline view")
+st.caption("What happens to your document and to your last question, step by step.")
 doc_info, query_info = st.session_state.get("pipeline_doc"), st.session_state.get("pipeline_query")
-is_admin = user_role == "Admin (Decrypted View)"
+
 if not doc_info:
-    st.caption("Upload a document and click Encrypt & Embed to see each step.")
+    st.info("Upload a document and click Encrypt and embed to see each step here.")
 else:
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown("**1. Original**")
-        st.code(doc_info["original"] if is_admin else "(hidden in the Guest view)", language="text")
-    with c2:
-        st.markdown("**2. Redacted (sent onward)**")
-        st.code(doc_info["redacted"][:500], language="text")
-    with c3:
-        st.markdown("**3. Embedding + noise**")
-        st.caption(f"First 6 of 384 numbers, noise ≈ {doc_info['noise_ratio']:.2f}× the vector (ε = {st.session_state.get('epsilon', DEFAULT_EPSILON)})")
-        st.code("clean: " + str(doc_info["raw_head"]) + "\nnoisy: " + str(doc_info["noisy_head"]), language="text")
-    with c4:
-        st.markdown("**4. Retrieved for your last question**")
-        if query_info:
-            st.caption(f"Question sent as: {query_info['blurred']}" + (f"  (you typed: {query_info['original']})" if is_admin else ""))
-            st.caption(f"{query_info['k']} chunks go to the LLM; closest 5:")
-            for score, text in query_info["top"]:
-                st.code(f"{score:.3f}  {text}", language="text")
+    with st.container(border=True):
+        st.subheader("1. Original text")
+        st.caption("The start of the file you uploaded. Only the Admin role can see it.")
+        st.code(doc_info["original"] if is_admin else "Hidden in the Guest view.", language="text", wrap_lines=True, height=280)
+
+    with st.container(border=True):
+        st.subheader("2. After redaction")
+        st.caption(f"The same stretch with sensitive values replaced by tokens ({doc_info['values_replaced']} distinct values in the whole "
+                   "document). Only this text is embedded and sent to the LLM.")
+        st.code(doc_info["redacted"], language="text", wrap_lines=True, height=280)
+
+    with st.container(border=True):
+        st.subheader("3. Embedding with noise")
+        st.caption(f"The text is cut into {doc_info['chunks']} chunks, and each chunk becomes 384 numbers. Laplace noise "
+                   f"(epsilon {eps}) is added before storing; here the noise is about {doc_info['noise_ratio']:.2f}x the size of the vector. "
+                   "The first 8 of the 384 numbers for the first chunk:")
+        rows = ["dim     clean     noisy"] + [f"{i:>3}   {c:+.4f}   {n:+.4f}"
+                                              for i, (c, n) in enumerate(zip(doc_info["raw_head"], doc_info["noisy_head"]))]
+        st.code("\n".join(rows), language="text", wrap_lines=True)
+
+    with st.container(border=True):
+        st.subheader("4. Retrieval for your last question")
+        if not query_info:
+            st.caption("Ask a question above to see which chunks are retrieved.")
         else:
-            st.caption("Ask a question to see which chunks are retrieved.")
+            if is_admin:
+                st.markdown(f"You asked: **{query_info['original']}**")
+            st.markdown(f"Sent to the search and the LLM as: **{query_info['blurred']}**")
+            st.caption(f"{query_info['k']} chunks go to the LLM. The 5 closest, with their distance (smaller is closer):")
+            for rank, (score, text) in enumerate(query_info["top"], start=1):
+                st.caption(f"Chunk {rank}, distance {score:.3f}")
+                st.code(text, language="text", wrap_lines=True)
 
 st.divider()
-st.subheader("Differential Privacy Proving Ground (PCA)")
-
-if "raw_vecs" in st.session_state and "noisy_vecs" in st.session_state:
-    if len(st.session_state.raw_vecs) < 2:
-        st.warning("⚠️ Document too small to graph variance. Add more text.")
+st.header("Embedding plot")
+if st.toggle("Show the original and noisy embeddings in 2D", help="A PCA projection. It shows how far the noise moves each chunk."):
+    if "raw_vecs" not in st.session_state:
+        st.info("Upload a document and click Encrypt and embed first.")
+    elif len(st.session_state.raw_vecs) < 2:
+        st.warning("The document is too small to plot. Add more text.")
     else:
-        pca = PCA(n_components=2)
-        pca.fit(st.session_state.raw_vecs)
-        
-        raw_2d = pca.transform(st.session_state.raw_vecs)
-        noisy_2d = pca.transform(st.session_state.noisy_vecs)
-        
-        df_raw = pd.DataFrame(raw_2d, columns=["X", "Y"])
-        df_raw["Data State"] = "Original (Sensitive)"
-        df_noisy = pd.DataFrame(noisy_2d, columns=["X", "Y"])
-        df_noisy["Data State"] = "Obfuscated (Noisy)"
-        
-        df_plot = pd.concat([df_raw, df_noisy])
-        
-        st.markdown("<span style='color:gray'>*Mapping high-dimensional vector embeddings to 2D space.*</span>", unsafe_allow_html=True)
-        
-        chart = alt.Chart(df_plot).mark_circle(size=120, opacity=0.8).encode(
-            x=alt.X('X', axis=alt.Axis(title='Principal Component 1')),
-            y=alt.Y('Y', axis=alt.Axis(title='Principal Component 2')),
-            color=alt.Color('Data State', scale=alt.Scale(domain=['Original (Sensitive)', 'Obfuscated (Noisy)'], range=['#0074D9', '#FF4136']), legend=alt.Legend(title="Vector State")),
-            tooltip=['Data State', 'X', 'Y']
-        ).properties(height=400).interactive()
-        
-        st.altair_chart(chart, use_container_width=True)
+        import pandas as pd
+        raw, noisy = st.session_state.raw_vecs, st.session_state.noisy_vecs
+        mean = raw.mean(axis=0)
+        axes = np.linalg.svd(raw - mean, full_matrices=False)[2][:2].T          # the two directions with the most spread
+        frame = pd.concat([
+            pd.DataFrame((raw - mean) @ axes, columns=["x", "y"]).assign(state="Original"),
+            pd.DataFrame((noisy - mean) @ axes, columns=["x", "y"]).assign(state="With noise")])
+        st.scatter_chart(frame, x="x", y="y", color="state", height=420)
