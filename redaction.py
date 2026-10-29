@@ -111,5 +111,6 @@ class Redactor:
         final_text = llm_response.replace("\\[", "[").replace("\\]", "]")
         for token, real_value in self.mapping.items():
             if token in final_text:
+                final_text = final_text.replace(f"**{token}**", token)          # the model already bolded it; do not double up
                 final_text = final_text.replace(token, f"**{real_value}**")
         return final_text

@@ -123,3 +123,9 @@ def test_lowercase_words_are_not_mistaken_for_names():
     text = "Ann Lee spoke. The lee side of the boat was calm."
     r = Redactor(ScoredAnalyzer([(0, 7, "PERSON", 0.85)]), {}, salt=b"s")
     assert "lee side" in r.blur_text(text)                                           # matching is case-sensitive
+
+
+def test_a_token_the_model_already_bolded_is_not_bolded_twice():
+    r = Redactor(FakeAnalyzer({}), {"[SALARY_AB12]": "$126,000"}, salt=b"s")
+    assert r.reassemble_text("the salary is **[SALARY_AB12]**.") == "the salary is **$126,000**."
+    assert r.reassemble_text("the salary is [SALARY_AB12].") == "the salary is **$126,000**."
