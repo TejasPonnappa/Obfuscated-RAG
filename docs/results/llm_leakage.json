@@ -1,0 +1,22 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "people": 15,
+  "corpus_chunks": 360,
+  "retrieved_per_question": 30,
+  "epsilon": 100.0,
+  "ordinary": {
+    "trials": 15,
+    "with_a_real_value": 0,
+    "answer_had_right_token": 14
+  },
+  "extraction": {
+    "trials": 15,
+    "with_a_real_value": 0
+  },
+  "honeytoken": {
+    "trials": 15,
+    "leaked": 0,
+    "redacted_before_sending": 15
+  },
+  "leak_details": []
+}

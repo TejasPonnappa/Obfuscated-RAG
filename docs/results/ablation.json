@@ -1,0 +1,275 @@
+{
+  "samples": {
+    "plain Presidio": {
+      "hidden": 58,
+      "total": 92,
+      "pct": 0.6304347826086957
+    },
+    "+ overlap by confidence": {
+      "hidden": 60,
+      "total": 92,
+      "pct": 0.6521739130434783
+    },
+    "+ custom rules": {
+      "hidden": 83,
+      "total": 92,
+      "pct": 0.9021739130434783
+    },
+    "+ name propagation": {
+      "hidden": 84,
+      "total": 92,
+      "pct": 0.9130434782608695
+    }
+  },
+  "tab": {
+    "plain Presidio": {
+      "all masked": {
+        "hidden": 3385,
+        "total": 4383,
+        "pct": 0.7723020762035135
+      },
+      "type CODE": {
+        "hidden": 19,
+        "total": 315,
+        "pct": 0.06031746031746032
+      },
+      "DIRECT (all types)": {
+        "hidden": 151,
+        "total": 285,
+        "pct": 0.5298245614035088
+      },
+      "type PERSON": {
+        "hidden": 740,
+        "total": 783,
+        "pct": 0.9450830140485313
+      },
+      "type DATETIME": {
+        "hidden": 2333,
+        "total": 2349,
+        "pct": 0.9931885908897403
+      },
+      "QUASI (all types)": {
+        "hidden": 3234,
+        "total": 4098,
+        "pct": 0.7891654465592972
+      },
+      "type LOC": {
+        "hidden": 140,
+        "total": 199,
+        "pct": 0.7035175879396985
+      },
+      "type ORG": {
+        "hidden": 74,
+        "total": 307,
+        "pct": 0.24104234527687296
+      },
+      "type DEM": {
+        "hidden": 58,
+        "total": 177,
+        "pct": 0.327683615819209
+      },
+      "NO_MASK values hidden (over-redaction)": {
+        "hidden": 450,
+        "total": 1422,
+        "pct": 0.31645569620253167
+      },
+      "type MISC": {
+        "hidden": 17,
+        "total": 91,
+        "pct": 0.18681318681318682
+      },
+      "type QUANTITY": {
+        "hidden": 4,
+        "total": 162,
+        "pct": 0.024691358024691357
+      }
+    },
+    "+ overlap by confidence": {
+      "all masked": {
+        "hidden": 3385,
+        "total": 4383,
+        "pct": 0.7723020762035135
+      },
+      "type CODE": {
+        "hidden": 19,
+        "total": 315,
+        "pct": 0.06031746031746032
+      },
+      "DIRECT (all types)": {
+        "hidden": 151,
+        "total": 285,
+        "pct": 0.5298245614035088
+      },
+      "type PERSON": {
+        "hidden": 740,
+        "total": 783,
+        "pct": 0.9450830140485313
+      },
+      "type DATETIME": {
+        "hidden": 2333,
+        "total": 2349,
+        "pct": 0.9931885908897403
+      },
+      "QUASI (all types)": {
+        "hidden": 3234,
+        "total": 4098,
+        "pct": 0.7891654465592972
+      },
+      "type LOC": {
+        "hidden": 140,
+        "total": 199,
+        "pct": 0.7035175879396985
+      },
+      "type ORG": {
+        "hidden": 74,
+        "total": 307,
+        "pct": 0.24104234527687296
+      },
+      "type DEM": {
+        "hidden": 58,
+        "total": 177,
+        "pct": 0.327683615819209
+      },
+      "NO_MASK values hidden (over-redaction)": {
+        "hidden": 447,
+        "total": 1422,
+        "pct": 0.3143459915611814
+      },
+      "type MISC": {
+        "hidden": 17,
+        "total": 91,
+        "pct": 0.18681318681318682
+      },
+      "type QUANTITY": {
+        "hidden": 4,
+        "total": 162,
+        "pct": 0.024691358024691357
+      }
+    },
+    "+ custom rules": {
+      "all masked": {
+        "hidden": 3424,
+        "total": 4383,
+        "pct": 0.7812000912616929
+      },
+      "type CODE": {
+        "hidden": 19,
+        "total": 315,
+        "pct": 0.06031746031746032
+      },
+      "DIRECT (all types)": {
+        "hidden": 151,
+        "total": 285,
+        "pct": 0.5298245614035088
+      },
+      "type PERSON": {
+        "hidden": 740,
+        "total": 783,
+        "pct": 0.9450830140485313
+      },
+      "type DATETIME": {
+        "hidden": 2333,
+        "total": 2349,
+        "pct": 0.9931885908897403
+      },
+      "QUASI (all types)": {
+        "hidden": 3273,
+        "total": 4098,
+        "pct": 0.7986822840409956
+      },
+      "type LOC": {
+        "hidden": 141,
+        "total": 199,
+        "pct": 0.7085427135678392
+      },
+      "type ORG": {
+        "hidden": 84,
+        "total": 307,
+        "pct": 0.2736156351791531
+      },
+      "type DEM": {
+        "hidden": 58,
+        "total": 177,
+        "pct": 0.327683615819209
+      },
+      "NO_MASK values hidden (over-redaction)": {
+        "hidden": 477,
+        "total": 1422,
+        "pct": 0.33544303797468356
+      },
+      "type MISC": {
+        "hidden": 17,
+        "total": 91,
+        "pct": 0.18681318681318682
+      },
+      "type QUANTITY": {
+        "hidden": 32,
+        "total": 162,
+        "pct": 0.19753086419753085
+      }
+    },
+    "+ name propagation": {
+      "all masked": {
+        "hidden": 3436,
+        "total": 4383,
+        "pct": 0.783937942048825
+      },
+      "type CODE": {
+        "hidden": 19,
+        "total": 315,
+        "pct": 0.06031746031746032
+      },
+      "DIRECT (all types)": {
+        "hidden": 153,
+        "total": 285,
+        "pct": 0.5368421052631579
+      },
+      "type PERSON": {
+        "hidden": 746,
+        "total": 783,
+        "pct": 0.9527458492975734
+      },
+      "type DATETIME": {
+        "hidden": 2333,
+        "total": 2349,
+        "pct": 0.9931885908897403
+      },
+      "QUASI (all types)": {
+        "hidden": 3283,
+        "total": 4098,
+        "pct": 0.8011224987798926
+      },
+      "type LOC": {
+        "hidden": 141,
+        "total": 199,
+        "pct": 0.7085427135678392
+      },
+      "type ORG": {
+        "hidden": 90,
+        "total": 307,
+        "pct": 0.2931596091205212
+      },
+      "type DEM": {
+        "hidden": 58,
+        "total": 177,
+        "pct": 0.327683615819209
+      },
+      "NO_MASK values hidden (over-redaction)": {
+        "hidden": 481,
+        "total": 1422,
+        "pct": 0.33825597749648384
+      },
+      "type MISC": {
+        "hidden": 17,
+        "total": 91,
+        "pct": 0.18681318681318682
+      },
+      "type QUANTITY": {
+        "hidden": 32,
+        "total": 162,
+        "pct": 0.19753086419753085
+      }
+    }
+  },
+  "tab_docs": 127
+}

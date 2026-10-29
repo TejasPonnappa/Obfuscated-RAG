@@ -72,7 +72,7 @@ def norm(s):
     return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
-def run(pause=1.5):
+def run(pause=1.5, cached_only=False):
     from dotenv import load_dotenv                 # heavy imports live here so norm() can be tested without them
     from langchain_groq import ChatGroq
     from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -100,6 +100,8 @@ def run(pause=1.5):
         for q, gold, kind in questions:
             for cond, eps, prompt in CONDITIONS:
                 key = f"{path}|{q}|{cond}|{groq_model()}"
+                if key not in cache and cached_only:
+                    continue                                    # no API call: score only what is already saved
                 if key not in cache:
                     if prompt is None:
                         answer = ask(llm, RAW_PROMPT.format(context=text, question=q))
@@ -123,8 +125,11 @@ def run(pause=1.5):
 
 def summarize(results):
     out = {}
+    expected = sum(len(v) for v in QA.values())
     for cond, _, _ in CONDITIONS:
         rows = [r for r in results if r["cond"] == cond]
+        if len(rows) < expected:                                # a condition that was not finished is left out, not shown half-done
+            continue
         out[cond] = dict(correct=sum(r["correct"] for r in rows), total=len(rows),
                          sensitive=dict(correct=sum(r["correct"] for r in rows if r["kind"] == "sensitive value"),
                                         total=sum(r["kind"] == "sensitive value" for r in rows)),
@@ -134,8 +139,10 @@ def summarize(results):
 
 
 if __name__ == "__main__":
+    import sys
+
     from config import groq_model
-    results = run()
+    results = run(cached_only="--cached-only" in sys.argv)
     summary = summarize(results)
     os.makedirs("eval/results", exist_ok=True)
     json.dump(dict(model=groq_model(), k=K, summary=summary, detail=results), open("eval/results/qa_utility.json", "w"), indent=2)

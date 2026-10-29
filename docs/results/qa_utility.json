@@ -1,0 +1,931 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "k": 4,
+  "summary": {
+    "raw document": {
+      "correct": 27,
+      "total": 27,
+      "sensitive": {
+        "correct": 24,
+        "total": 24
+      },
+      "other": {
+        "correct": 3,
+        "total": 3
+      }
+    },
+    "redacted, no noise": {
+      "correct": 22,
+      "total": 27,
+      "sensitive": {
+        "correct": 19,
+        "total": 24
+      },
+      "other": {
+        "correct": 3,
+        "total": 3
+      }
+    },
+    "redacted, eps 100": {
+      "correct": 23,
+      "total": 27,
+      "sensitive": {
+        "correct": 20,
+        "total": 24
+      },
+      "other": {
+        "correct": 3,
+        "total": 3
+      }
+    },
+    "redacted, eps 20": {
+      "correct": 20,
+      "total": 27,
+      "sensitive": {
+        "correct": 17,
+        "total": 24
+      },
+      "other": {
+        "correct": 3,
+        "total": 3
+      }
+    }
+  },
+  "detail": [
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's starting salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise (new prompt)",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the password for the backup server login?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20 (new prompt)",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Tomasz Kowalski's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20 (new prompt)",
+      "correct": false
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Aisha Bello's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "At what time did the monitoring system flag the failed logins?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "Whose laptop were the failed logins traced to?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "Whose laptop were the failed logins traced to?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "Whose laptop were the failed logins traced to?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "Whose laptop were the failed logins traced to?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "Whose laptop were the failed logins traced to?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "Whose laptop were the failed logins traced to?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100 (new prompt)",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Elena Vasquez's salary?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Elena Vasquez's salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Elena Vasquez's salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is Elena Vasquez's salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the IP address of the payroll database?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the IP address of the payroll database?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the IP address of the payroll database?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What is the IP address of the payroll database?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What did the incident report conclude about payroll data?",
+      "kind": "other",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What did the incident report conclude about payroll data?",
+      "kind": "other",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What did the incident report conclude about payroll data?",
+      "kind": "other",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/northwind_hr_records.txt",
+      "q": "What did the incident report conclude about payroll data?",
+      "kind": "other",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's annual base salary?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's annual base salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's annual base salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's annual base salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's phone number?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's phone number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's date of birth?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's date of birth?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's date of birth?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's date of birth?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is the front desk laptop password?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is the front desk laptop password?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": false
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is the front desk laptop password?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is the front desk laptop password?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Omar Haddad's new cell number?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Omar Haddad's new cell number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Omar Haddad's new cell number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Omar Haddad's new cell number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Marco Delgado's email address?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Marco Delgado's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": false
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Marco Delgado's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Marco Delgado's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's employee ID?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's employee ID?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's employee ID?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": false
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Sofia Marchetti's employee ID?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Eleanor Brooks's insurance member number?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Eleanor Brooks's insurance member number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Eleanor Brooks's insurance member number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What is Eleanor Brooks's insurance member number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What job is Sofia Marchetti joining as?",
+      "kind": "other",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What job is Sofia Marchetti joining as?",
+      "kind": "other",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What job is Sofia Marchetti joining as?",
+      "kind": "other",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/harbor_clinic_emails.txt",
+      "q": "What job is Sofia Marchetti joining as?",
+      "kind": "other",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's account number?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's account number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's account number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's account number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's sort code?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's sort code?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's sort code?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Piotr Jankowski's sort code?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Gareth Pugh's salary?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Gareth Pugh's salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Gareth Pugh's salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Gareth Pugh's salary?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is the staff rota password?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is the staff rota password?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is the staff rota password?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is the staff rota password?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Adaeze Okonkwo's national insurance number?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Adaeze Okonkwo's national insurance number?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Adaeze Okonkwo's national insurance number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Adaeze Okonkwo's national insurance number?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Emeka Okonkwo's email address?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Emeka Okonkwo's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Emeka Okonkwo's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Emeka Okonkwo's email address?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Santiago Herrera-Lopez's temporary passphrase?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Santiago Herrera-Lopez's temporary passphrase?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Santiago Herrera-Lopez's temporary passphrase?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What is Santiago Herrera-Lopez's temporary passphrase?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": false
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "Which engineer is mentioned as fixing the boiler fault?",
+      "kind": "sensitive value",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "Which engineer is mentioned as fixing the boiler fault?",
+      "kind": "sensitive value",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "Which engineer is mentioned as fixing the boiler fault?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "Which engineer is mentioned as fixing the boiler fault?",
+      "kind": "sensitive value",
+      "cond": "redacted, eps 20",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What was the cause of the boiler fault?",
+      "kind": "other",
+      "cond": "raw document",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What was the cause of the boiler fault?",
+      "kind": "other",
+      "cond": "redacted, no noise",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What was the cause of the boiler fault?",
+      "kind": "other",
+      "cond": "redacted, eps 100",
+      "correct": true
+    },
+    {
+      "doc": "samples/riverbend_customer_letters.txt",
+      "q": "What was the cause of the boiler fault?",
+      "kind": "other",
+      "cond": "redacted, eps 20",
+      "correct": true
+    }
+  ]
+}

@@ -63,12 +63,27 @@ def render():
     if not qa:
         missing("qa_utility")
     else:
-        order = list(qa["summary"])
-        frame = pd.DataFrame({"condition": order, "correct": [qa["summary"][c]["correct"] / qa["summary"][c]["total"] for c in order]})
-        bar(frame, "condition", "correct", order)
-        st.caption(f"{qa['summary'][order[0]]['total']} questions about the three fictional documents, model {qa['model']}. The first bar is the LLM seeing the "
-                   f"whole unredacted document (no privacy). The others use redaction, restore the real values locally, and retrieve {qa['k']} chunks "
-                   "with different amounts of embedding noise. An answer is correct if it contains the right value.")
+        import altair as alt
+        summ = qa["summary"]
+        total = summ["raw document"]["total"]
+        rows = [{"setting": "No privacy (raw document)", "prompt": "Raw document", "correct": summ["raw document"]["correct"] / total}]
+        for label, name in (("No noise", "redacted, no noise"), ("Noise 100 (default)", "redacted, eps 100"), ("Noise 20", "redacted, eps 20")):
+            for prompt, suffix in (("Original prompt", ""), ("Improved prompt", " (new prompt)")):
+                if name + suffix in summ:
+                    rows.append({"setting": label, "prompt": prompt, "correct": summ[name + suffix]["correct"] / total})
+        frame = pd.DataFrame(rows)
+        order = list(dict.fromkeys(frame["setting"]))
+        base = alt.Chart(frame).encode(
+            x=alt.X("setting:N", sort=order, title=None, axis=alt.Axis(labelAngle=0, labelLimit=170)),
+            xOffset=alt.XOffset("prompt:N"), y=alt.Y("correct:Q", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(format=".0%"), title=None))
+        bars = base.mark_bar().encode(color=alt.Color("prompt:N", title=None, sort=["Raw document", "Original prompt", "Improved prompt"]),
+                                      tooltip=["setting", "prompt", alt.Tooltip("correct", format=".0%")])
+        labels = base.mark_text(dy=-6).encode(text=alt.Text("correct:Q", format=".0%"))
+        st.altair_chart((bars + labels).properties(height=300), use_container_width=True)
+        st.caption(f"{total} questions about the three fictional documents, model {qa['model']}. The first bar is the LLM seeing the whole "
+                   f"unredacted document (no privacy). The others use redaction, restore the real values locally, and retrieve {qa['k']} chunks "
+                   "with different amounts of embedding noise. The improved prompt tells the model that tags are harmless placeholders to "
+                   "repeat; the original made it refuse some password questions. An answer is correct if it contains the right value.")
 
     # 3. retrieval vs noise
     st.subheader("3. Embedding noise and finding the right chunk")
@@ -82,8 +97,8 @@ def render():
         order = [name for _, name in labels]
         bar(pd.DataFrame({"epsilon": order, "found": values}), "epsilon", "found", order)
         st.caption(f"Share of questions where the right chunk is among the top 5 of {pu['chunks']} (random guessing would be "
-                   f"{pu['random_baseline']['5']:.0%}). Smaller epsilon means more noise. The app's default, 100, keeps nearly all of it; "
-                   "below 50 retrieval falls apart. This is why the noise is fixed at 100 and not chosen automatically.")
+                   f"{pu['random_baseline']['5']:.0%}). Smaller epsilon means more noise. The app's default, 100, keeps about 95% of it; "
+                   "at 50 it keeps about 80% and at 20 about 30%. This is why the noise is fixed at 100 and not chosen automatically.")
 
     # 4. guessing attack
     st.subheader("4. Can the LLM guess the hidden values?")
@@ -117,5 +132,6 @@ def render():
         bad = leak["ordinary"]["with_a_real_value"] + leak["extraction"]["with_a_real_value"] + leak["honeytoken"]["leaked"]
         st.markdown(f"**{bad} of {n} trials** returned a real value (ordinary questions, attempts to make the LLM print the real values, "
                     "and the self-audit's planted secret).")
-        st.caption("This mostly confirms that detection covered every value in these fictional documents: the LLM can only repeat what it was "
+        st.caption("Measured with the original prompt, before the prompt in section 2 was improved; a re-run is pending. "
+                   "This mostly confirms that detection covered every value in these fictional documents: the LLM can only repeat what it was "
                    "given. It says nothing about values the detector misses in your own document, which is what section 1 measures.")
