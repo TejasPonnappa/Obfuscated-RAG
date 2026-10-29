@@ -85,14 +85,8 @@ def extra_hidden(path, truth, redactor):
 
 
 if __name__ == "__main__":
-    import sys
     analyzer = build_analyzer()
-    if "--gliner" in sys.argv:
-        from gliner_layer import GlinerAnalyzer
-        analyzer = GlinerAnalyzer(analyzer)
     for path, truth in DOCS.items():
         redactor = Redactor(analyzer, {}, b"x")
         score(path, truth, redactor)
         print(f"  extra values hidden that are not in the ground truth: {len(extra_hidden(path, truth, redactor))}")
-    if hasattr(analyzer, "seconds"):
-        print(f"\nGLiNER time over all runs: {analyzer.seconds:.1f}s")

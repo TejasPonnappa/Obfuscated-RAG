@@ -20,9 +20,8 @@ _NAME = r"[A-Z][a-z]+(?:[ ][A-Z][a-z'-]+){1,2}"
 NAME_AFTER_LABEL_REGEXES = [rf"(?<={label}[ ]){_NAME}" for label in ("Review of", "Employee:", "Employee", "Name:", "Name", "Profile of")]
 
 
-def build_analyzer(gliner=False):
-    """Presidio's default analyzer plus custom recognizers: passwords, money, street addresses and names after a label.
-    gliner=True adds the GLiNER model on top (gliner_layer.py)."""
+def build_analyzer():
+    """Presidio's default analyzer plus custom recognizers: passwords, money, street addresses and names after a label."""
     from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer      # imported here so the regexes above need no NLP stack
 
     engine = AnalyzerEngine()
@@ -35,7 +34,4 @@ def build_analyzer(gliner=False):
     engine.registry.add_recognizer(PatternRecognizer(
         supported_entity="PERSON",
         patterns=[Pattern(name=f"name_after_label_{i}", regex=rx, score=0.85) for i, rx in enumerate(NAME_AFTER_LABEL_REGEXES)]))
-    if gliner:
-        from gliner_layer import GlinerAnalyzer
-        return GlinerAnalyzer(engine)
     return engine

@@ -37,7 +37,6 @@ If role = Guest → tokens stay redacte(?i)(?:password|secret)\s*(?:[:=]|\s+is\s
   - `SALARY` — catches `$` amounts
 - Each detected span is replaced with a random token, e.g. `[PERSON_A1B2]`, and the real value is stored in `st.session_state.secure_mapping` (a token → real-value lookup table that never leaves your session).
 - When detections overlap, the more confident one wins and the weaker one is cut back to the part that overlaps nothing (the name model sometimes returns a name and the email next to it as one span). A name found once is also hidden everywhere else it appears, including first and last names on their own.
-- Optional extra detector: **GLiNER** (`gliner_layer.py`, tick the box in the sidebar). It is a small model that finds things you describe in plain words ("street address", "password"), and it runs on your machine, so no text is sent anywhere. It needs `pip install gliner` and a one-time 1.1 GB download. On three fictional test documents (`python -m eval.sample_check --gliner`) it raised the share of sensitive values hidden from 75–93% to 96–100%, and it hides a few more ordinary words too. Redaction is still best-effort, so check the Pipeline view to see what actually went out.
 
 ### 2. Chunking
 - `RecursiveCharacterTextSplitter` splits the redacted document into 500-character chunks with 50-character overlap — standard RAG chunking so each chunk is small enough to embed and retrieve meaningfully, with overlap to avoid cutting sentences awkwardly at boundaries.
