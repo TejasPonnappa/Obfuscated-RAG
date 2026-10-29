@@ -129,3 +129,13 @@ def test_a_token_the_model_already_bolded_is_not_bolded_twice():
     r = Redactor(FakeAnalyzer({}), {"[SALARY_AB12]": "$126,000"}, salt=b"s")
     assert r.reassemble_text("the salary is **[SALARY_AB12]**.") == "the salary is **$126,000**."
     assert r.reassemble_text("the salary is [SALARY_AB12].") == "the salary is **$126,000**."
+
+
+def test_the_improvements_can_be_switched_off_for_the_evaluation():
+    text = "Aisha Bello joined. Later Aisha Bello left."
+    spans = ScoredAnalyzer([(0, 11, "PERSON", 0.85)])
+    assert "Aisha" in Redactor(spans, {}, salt=b"s", propagate_names=False).blur_text(text)       # second mention left alone
+    assert "Aisha" not in Redactor(spans, {}, salt=b"s").blur_text(text)
+    nested = ScoredAnalyzer([(0, 27, "PERSON", 0.85), (18, 27, "EMAIL_ADDRESS", 1.0)])
+    old = Redactor(nested, {}, salt=b"s", overlap="first").blur_text("Daniel O'Connor - d.o@x.com is here")
+    assert "d.o@x.com" in old                                                                      # the old rule exposed the email

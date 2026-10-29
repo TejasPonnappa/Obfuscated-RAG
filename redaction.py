@@ -13,12 +13,15 @@ from types import SimpleNamespace
 
 
 class Redactor:
-    def __init__(self, analyzer, mapping, salt):
+    def __init__(self, analyzer, mapping, salt, propagate_names=True, overlap="confidence"):
         """analyzer: object with analyze(text=..., language=...) -> results with start, end, entity_type.
-        mapping: dict token -> real value (mutated). salt: bytes."""
+        mapping: dict token -> real value (mutated). salt: bytes.
+        propagate_names / overlap exist so the evaluation can switch each improvement off ("first" = earliest span wins)."""
         self.analyzer = analyzer
         self.mapping = mapping
         self.salt = salt
+        self.propagate_names = propagate_names
+        self.overlap = overlap
 
     def token_for(self, entity_type, value):
         """Deterministic token for a value; lengthens the hash on the rare collision with a different value."""
@@ -32,12 +35,23 @@ class Redactor:
 
     def blur_text(self, text):
         """Replace every detected entity with its token, then hide any name found once everywhere it appears."""
-        kept = self._resolve_overlaps(text, self.analyzer.analyze(text=text, language="en"))
+        results = self.analyzer.analyze(text=text, language="en")
+        kept = self._first_wins(results) if self.overlap == "first" else self._resolve_overlaps(text, results)
         out = text
         for r in sorted(kept, key=lambda r: r.start, reverse=True):
             end = self._trim_person_end(text, r) if r.entity_type == "PERSON" else r.end
             out = out[:r.start] + self.token_for(r.entity_type, text[r.start:end]) + out[end:]
-        return self._propagate_names(out)
+        return self._propagate_names(out) if self.propagate_names else out
+
+    @staticmethod
+    def _first_wins(results):
+        """The original rule: the span that starts first (then the longer one) wins, later overlapping spans are dropped."""
+        kept, last_end = [], -1
+        for r in sorted(results, key=lambda r: (r.start, -(r.end - r.start))):
+            if r.start >= last_end:
+                kept.append(r)
+                last_end = r.end
+        return kept
 
     @staticmethod
     def _resolve_overlaps(text, results):

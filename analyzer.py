@@ -20,11 +20,14 @@ _NAME = r"[A-Z][a-z]+(?:[ ][A-Z][a-z'-]+){1,2}"
 NAME_AFTER_LABEL_REGEXES = [rf"(?<={label}[ ]){_NAME}" for label in ("Review of", "Employee:", "Employee", "Name:", "Name", "Profile of")]
 
 
-def build_analyzer():
-    """Presidio's default analyzer plus custom recognizers: passwords, money, street addresses and names after a label."""
+def build_analyzer(custom_rules=True):
+    """Presidio's default analyzer plus custom recognizers: passwords, money, street addresses and names after a label.
+    custom_rules=False gives plain Presidio (used by the evaluation to show what the extra rules add)."""
     from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer      # imported here so the regexes above need no NLP stack
 
     engine = AnalyzerEngine()
+    if not custom_rules:
+        return engine
     engine.registry.add_recognizer(PatternRecognizer(
         supported_entity="PASSWORD", patterns=[Pattern(name="password_pattern", regex=PASSWORD_REGEX, score=0.9)]))
     engine.registry.add_recognizer(PatternRecognizer(
