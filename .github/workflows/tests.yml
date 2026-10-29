@@ -14,5 +14,5 @@ jobs:
         with:
           python-version: "3.12"
       # the unit tests cover the pure modules (redaction, audit, noise, regexes, corpus), so no Presidio or torch is installed; evals run locally
-      - run: pip install numpy scikit-learn pytest faker
+      - run: pip install numpy scikit-learn pytest faker pypdf
       - run: python -m pytest -q

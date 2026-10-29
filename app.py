@@ -11,6 +11,7 @@ from langchain_groq import ChatGroq
 import warmup
 from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
 from config import groq_model, is_idle
+from documents import NoTextError, extract_text
 from noise import (DEFAULT_EPSILON, EPSILON_CHOICES, MIN_USABLE_EPSILON, DifferentialPrivacyAgent,
                    noise_to_signal_ratio, retention_estimate)
 from redaction import Redactor
@@ -112,15 +113,19 @@ with st.sidebar:
     st.header("Controls")
 
     st.subheader("Document")
-    uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
+    uploaded_file = st.file_uploader("Upload a text or PDF file", type=["txt", "pdf"])
     if st.button("Encrypt and embed", use_container_width=True, type="primary") and uploaded_file:
+        try:
+            original = extract_text(uploaded_file.name, uploaded_file.getvalue())
+        except NoTextError as e:
+            st.error(str(e))
+            st.stop()
         with st.spinner("Redacting and embedding (the first run also finishes loading the models)..."):
             st.session_state.vector_store = None
             st.session_state.secure_mapping.clear()
             st.session_state.chat_history = []
             st.session_state.pop("pipeline_query", None)
 
-            original = uploaded_file.getvalue().decode("utf-8", errors="replace")
             redacted = new_redactor().blur_text(original)
             chunks = warmup.get("Splitter")(chunk_size=500, chunk_overlap=50).split_documents(
                 [Document(page_content=redacted, metadata={"source": uploaded_file.name})])

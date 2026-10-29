@@ -12,4 +12,5 @@ numpy>=1.26
 pandas>=2.1
 altair>=5
 python-dotenv
+pypdf
 langchain-huggingface
