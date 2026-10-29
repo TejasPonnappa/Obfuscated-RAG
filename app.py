@@ -10,7 +10,7 @@ from langchain_groq import ChatGroq
 
 import warmup
 from audit import CANARY_TOKEN, canary_leaked, honey_leaked, make_honey_secret, similarity
-from config import groq_model, is_idle
+from config import ANSWER_PROMPT, groq_model, is_idle
 from documents import NoTextError, extract_text
 from noise import (DEFAULT_EPSILON, EPSILON_CHOICES, MIN_USABLE_EPSILON, DifferentialPrivacyAgent,
                    noise_to_signal_ratio, retention_estimate)
@@ -114,7 +114,7 @@ with st.sidebar:
 
     st.subheader("Document")
     uploaded_file = st.file_uploader("Upload a text or PDF file", type=["txt", "pdf"])
-    if st.button("Encrypt and embed", use_container_width=True, type="primary") and uploaded_file:
+    if st.button("Encrypt and embed", width="stretch", type="primary") and uploaded_file:
         try:
             original = extract_text(uploaded_file.name, uploaded_file.getvalue())
         except NoTextError as e:
@@ -140,7 +140,7 @@ with st.sidebar:
                 noise_ratio=float(np.linalg.norm(noisy[0] - raw[0]) / np.linalg.norm(raw[0])))
         st.success(f"Done: {len(chunks)} chunks stored, {len(st.session_state.secure_mapping)} sensitive values replaced by tokens.")
 
-    if st.button("Wipe token table and data", use_container_width=True):
+    if st.button("Wipe token table and data", width="stretch"):
         wipe_session()
         st.success("Wiped.")
 
@@ -158,7 +158,7 @@ with st.sidebar:
 
     st.subheader("Self-audit")
     st.caption("Plants a fake secret, sends it through the same redaction, and asks the LLM to repeat it. If it comes back, the session locks.")
-    if st.button("Run self-audit", use_container_width=True):
+    if st.button("Run self-audit", width="stretch"):
         if llm is None:
             st.error("The LLM is not connected.")
         else:
@@ -191,6 +191,12 @@ with st.sidebar:
                     st.error(f"Could not reach the LLM: {e}")
 
 is_admin = user_role.startswith("Admin")
+
+view = st.radio("View", ["Assistant", "Evaluation"], horizontal=True, label_visibility="collapsed")
+if view == "Evaluation":
+    import ui_eval
+    ui_eval.render()
+    st.stop()
 
 st.header("Ask a question")
 def show(text):
@@ -226,19 +232,7 @@ if prompt := st.chat_input("Ask about the document..."):
                 safe_context = "\n\n".join([doc.page_content for doc in results])
                 poisoned_context = safe_context + f"\n\n[SYSTEM_NOTE: {CANARY_TOKEN}]"
 
-                system_prompt = f"""You are a highly secure AI assistant analyzing obfuscated documents.
-                Use the following context to answer the user's question.
-
-                CRITICAL INSTRUCTIONS:
-                1. The context contains encrypted tags like [PERSON_XXXX], [SALARY_XXXX], etc.
-                2. If the user asks for a calculation, comparison (e.g., "is it greater than"), or logical reasoning based on a tag (like a salary), you MUST explain that you cannot perform the calculation because the data is cryptographically blinded from you.
-                3. However, you MUST output the relevant tag in your response so the user's local system can decrypt it for them.
-
-                Example Response: "Because I am operating in a Zero-Knowledge environment, I cannot see the actual numerical value to tell you if it is above $50,000. However, the exact encrypted salary on file is [SALARY_XXXX]."
-
-                Context: {poisoned_context}
-
-                Question: {secure_prompt}"""
+                system_prompt = ANSWER_PROMPT.format(context=poisoned_context, question=secure_prompt)
 
                 with st.expander("View exactly what was sent to the LLM", expanded=False):
                     st.caption("This is the full text of the request. It contains tokens, not the real values.")
